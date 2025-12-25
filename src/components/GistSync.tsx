@@ -5,10 +5,12 @@ import {
   saveGistConfig,
   clearGistConfig,
   validateToken,
+  findAllGists,
   syncToGist,
   pullFromGist,
+  type GistInfo,
 } from '../utils/gistSync'
-import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle } from 'lucide-react'
+import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown } from 'lucide-react'
 
 export function GistSync() {
   const { exportData, importData } = useStore()
@@ -16,9 +18,11 @@ export function GistSync() {
   const [showSettings, setShowSettings] = useState(false)
   const [token, setToken] = useState('')
   const [gistId, setGistId] = useState('')
+  const [gistList, setGistList] = useState<GistInfo[]>([])
   const [pushing, setPushing] = useState(false)
   const [pulling, setPulling] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [loadingGists, setLoadingGists] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
@@ -35,6 +39,22 @@ export function GistSync() {
     setTimeout(() => setMessage(null), 3000)
   }
 
+  // 加载 Gist 列表
+  const loadGistList = async (tokenToUse: string) => {
+    if (!tokenToUse) return
+    setLoadingGists(true)
+    const gists = await findAllGists(tokenToUse)
+    setGistList(gists)
+    setLoadingGists(false)
+  }
+
+  // Token 输入后自动加载 Gist 列表
+  const handleTokenBlur = async () => {
+    if (token && token.startsWith('ghp_')) {
+      await loadGistList(token)
+    }
+  }
+
   const handleSaveConfig = async () => {
     if (!token.trim()) {
       showMessage('error', '请输入 Token')
@@ -42,31 +62,18 @@ export function GistSync() {
     }
 
     setSaving(true)
-    const result = await validateToken(token)
-    if (!result.valid) {
+    const valid = await validateToken(token)
+    if (!valid) {
       showMessage('error', 'Token 无效，请检查')
       setSaving(false)
       return
     }
 
-    // 优先使用手动填写的 Gist ID
-    let finalGistId = gistId || null
-    
-    // 只有没有手动填写时才尝试自动查找
-    if (!finalGistId && result.gistId) {
-      // 找到了已有的 Gist，询问是否使用
-      const useExisting = confirm(`找到已有的云端数据 (ID: ${result.gistId.slice(0, 8)}...)，是否使用？\n\n点击"取消"将创建新的存储。`)
-      if (useExisting) {
-        finalGistId = result.gistId
-      }
-    }
-    
-    saveGistConfig({ token, gistId: finalGistId })
-    setGistId(finalGistId || '')
+    saveGistConfig({ token, gistId: gistId || null })
     setIsConfigured(true)
     setShowSettings(false)
     
-    if (finalGistId) {
+    if (gistId) {
       showMessage('success', '配置已保存，可以拉取数据')
     } else {
       showMessage('success', '配置已保存，推送时将创建新存储')
@@ -79,6 +86,7 @@ export function GistSync() {
     setIsConfigured(false)
     setToken('')
     setGistId('')
+    setGistList([])
     setShowSettings(false)
     showMessage('success', '已断开连接')
   }
@@ -88,11 +96,10 @@ export function GistSync() {
     const data = exportData()
     const result = await syncToGist(data)
     if (result.success) {
-      // 更新 gistId
       const config = getGistConfig()
       if (config?.gistId) {
         setGistId(config.gistId)
-        showMessage('success', `已同步到云端，Gist ID: ${config.gistId.slice(0, 8)}...`)
+        showMessage('success', `已同步到云端`)
       } else {
         showMessage('success', '已同步到云端')
       }
@@ -116,6 +123,16 @@ export function GistSync() {
       showMessage('error', result.error || '拉取失败')
     }
     setPulling(false)
+  }
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleString('zh-CN', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
 
   return (
@@ -162,7 +179,10 @@ export function GistSync() {
         
         {isConfigured && (
           <button
-            onClick={() => setShowSettings(true)}
+            onClick={() => {
+              setShowSettings(true)
+              loadGistList(token)
+            }}
             className="p-2.5 bg-[#1a1a24] border border-white/5 rounded-xl text-sm hover:bg-[#22222e] hover:border-white/10 text-gray-400 hover:text-white transition-all"
             title="同步设置"
           >
@@ -235,6 +255,7 @@ export function GistSync() {
                     type="password"
                     value={token}
                     onChange={(e) => setToken(e.target.value)}
+                    onBlur={handleTokenBlur}
                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-gray-600"
                     placeholder="ghp_xxxxxxxxxxxx"
                   />
@@ -255,36 +276,54 @@ export function GistSync() {
 
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
-                  Gist ID（跨设备同步必填）
+                  选择云端数据
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
+                <div className="relative">
+                  <select
                     value={gistId}
                     onChange={(e) => setGistId(e.target.value)}
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-gray-600"
-                    placeholder="首次推送后自动生成"
-                  />
-                  {gistId && (
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all appearance-none text-gray-300"
+                  >
+                    <option value="">创建新存储</option>
+                    {gistList.map((gist) => (
+                      <option key={gist.id} value={gist.id}>
+                        {gist.id.slice(0, 8)}... (更新于 {formatDate(gist.updatedAt)})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                </div>
+                {loadingGists && (
+                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    加载中...
+                  </p>
+                )}
+                {!loadingGists && gistList.length === 0 && token && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    未找到已有数据，推送时将创建新存储
+                  </p>
+                )}
+                {gistId && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="text"
+                      value={gistId}
+                      readOnly
+                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-400"
+                    />
                     <button
                       type="button"
                       onClick={() => {
                         navigator.clipboard.writeText(gistId)
                         showMessage('success', 'Gist ID 已复制')
                       }}
-                      className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                      className="px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/10 transition-all"
                     >
                       复制
                     </button>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {gistId ? (
-                    <span className="text-emerald-400">✓ 在其他设备上只需填入相同 Token 即可自动找到</span>
-                  ) : (
-                    '首次推送会自动创建，其他设备只需填 Token 会自动查找'
-                  )}
-                </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -294,7 +333,7 @@ export function GistSync() {
                   onClick={handleDisconnect}
                   className="px-4 py-3 bg-red-500/20 border border-red-500/30 rounded-xl font-medium text-red-400 hover:bg-red-500/30 transition-all"
                 >
-                  断开连接
+                  断开
                 </button>
               )}
               <button

@@ -6,6 +6,11 @@ interface GistConfig {
   gistId: string | null
 }
 
+export interface GistInfo {
+  id: string
+  updatedAt: string
+}
+
 export function getGistConfig(): GistConfig | null {
   const stored = localStorage.getItem(STORAGE_KEY)
   if (!stored) return null
@@ -24,25 +29,43 @@ export function clearGistConfig() {
   localStorage.removeItem(STORAGE_KEY)
 }
 
-// 查找已存在的 Web3Tracker Gist
-async function findExistingGist(token: string): Promise<string | null> {
+// 查找所有 Web3Tracker Gist
+export async function findAllGists(token: string): Promise<GistInfo[]> {
   try {
-    const response = await fetch('https://api.github.com/gists', {
+    const response = await fetch('https://api.github.com/gists?per_page=100', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
-    if (!response.ok) return null
+    if (!response.ok) return []
     
     const gists = await response.json()
+    const results: GistInfo[] = []
     for (const gist of gists) {
       if (gist.files && gist.files[GIST_FILENAME]) {
-        return gist.id
+        results.push({
+          id: gist.id,
+          updatedAt: gist.updated_at,
+        })
       }
     }
-    return null
+    return results
   } catch {
-    return null
+    return []
+  }
+}
+
+// 验证 Token 是否有效
+export async function validateToken(token: string): Promise<boolean> {
+  try {
+    const response = await fetch('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    return response.ok
+  } catch {
+    return false
   }
 }
 
@@ -56,7 +79,7 @@ async function createGist(token: string, data: string): Promise<string> {
     },
     body: JSON.stringify({
       description: 'Web3 Tracker Data Backup',
-      public: false, // 私有 Gist
+      public: false,
       files: {
         [GIST_FILENAME]: {
           content: data,
@@ -118,24 +141,6 @@ async function readGist(token: string, gistId: string): Promise<string | null> {
   return file ? file.content : null
 }
 
-// 验证 Token 是否有效，并尝试查找已有的 Gist
-export async function validateToken(token: string): Promise<{ valid: boolean; gistId?: string }> {
-  try {
-    const response = await fetch('https://api.github.com/user', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    if (!response.ok) return { valid: false }
-    
-    // Token 有效，尝试查找已有的 Gist
-    const existingGistId = await findExistingGist(token)
-    return { valid: true, gistId: existingGistId || undefined }
-  } catch {
-    return { valid: false }
-  }
-}
-
 // 同步数据到 Gist
 export async function syncToGist(data: string): Promise<{ success: boolean; error?: string }> {
   const config = getGistConfig()
@@ -145,12 +150,10 @@ export async function syncToGist(data: string): Promise<{ success: boolean; erro
 
   try {
     if (config.gistId) {
-      // 尝试更新现有 Gist
       try {
         await updateGist(config.token, config.gistId, data)
       } catch (e) {
         if (e instanceof Error && e.message === 'GIST_NOT_FOUND') {
-          // Gist 不存在，创建新的
           const newGistId = await createGist(config.token, data)
           saveGistConfig({ ...config, gistId: newGistId })
         } else {
@@ -158,7 +161,6 @@ export async function syncToGist(data: string): Promise<{ success: boolean; erro
         }
       }
     } else {
-      // 创建新 Gist
       const gistId = await createGist(config.token, data)
       saveGistConfig({ ...config, gistId })
     }
@@ -176,7 +178,7 @@ export async function pullFromGist(): Promise<{ success: boolean; data?: string;
   }
 
   if (!config.gistId) {
-    return { success: false, error: '未找到云端数据，请先同步' }
+    return { success: false, error: '未选择云端数据，请先选择或推送' }
   }
 
   try {
