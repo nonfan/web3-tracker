@@ -8,10 +8,9 @@ import {
   findAllGists,
   syncToGist,
   pullFromGist,
-  deleteGist,
   type GistInfo,
 } from '../utils/gistSync'
-import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown, Trash2 } from 'lucide-react'
+import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown } from 'lucide-react'
 
 export function GistSync() {
   const { exportData, importData } = useStore()
@@ -24,7 +23,6 @@ export function GistSync() {
   const [pulling, setPulling] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loadingGists, setLoadingGists] = useState(false)
-  const [deleting, setDeleting] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
@@ -140,25 +138,6 @@ export function GistSync() {
       hour: '2-digit',
       minute: '2-digit',
     })
-  }
-
-  const handleDeleteGist = async (gistIdToDelete: string) => {
-    if (!confirm(`确定删除这个云端存储？\n\nGist ID: ${gistIdToDelete}\n\n此操作不可恢复！`)) {
-      return
-    }
-    
-    setDeleting(gistIdToDelete)
-    const success = await deleteGist(token, gistIdToDelete)
-    if (success) {
-      setGistList(gistList.filter(g => g.id !== gistIdToDelete))
-      if (gistId === gistIdToDelete) {
-        setGistId('')
-      }
-      showMessage('success', '已删除')
-    } else {
-      showMessage('error', '删除失败')
-    }
-    setDeleting(null)
   }
 
   return (
@@ -333,7 +312,7 @@ export function GistSync() {
                 {/* Gist 列表管理 */}
                 {gistList.length > 0 && (
                   <div className="mt-3 space-y-2">
-                    <p className="text-xs text-gray-500">管理云端存储：</p>
+                    <p className="text-xs text-gray-500">已有云端存储（删除请前往 gist.github.com）：</p>
                     {gistList.map((gist) => (
                       <div
                         key={gist.id}
@@ -345,30 +324,16 @@ export function GistSync() {
                           <p className="text-xs text-gray-300 truncate">{gist.id}</p>
                           <p className="text-xs text-gray-500">{formatDate(gist.updatedAt)}</p>
                         </div>
-                        <div className="flex items-center gap-1 ml-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(gist.id)
-                              showMessage('success', 'ID 已复制')
-                            }}
-                            className="p-1.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors text-xs"
-                          >
-                            复制
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteGist(gist.id)}
-                            disabled={deleting === gist.id}
-                            className="p-1.5 hover:bg-red-500/20 rounded text-gray-500 hover:text-red-400 transition-colors disabled:opacity-50"
-                          >
-                            {deleting === gist.id ? (
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(gist.id)
+                            showMessage('success', 'ID 已复制')
+                          }}
+                          className="p-1.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors text-xs ml-2"
+                        >
+                          复制
+                        </button>
                       </div>
                     ))}
                   </div>
