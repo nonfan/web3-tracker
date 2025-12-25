@@ -90,10 +90,16 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel()
+      }}
+    >
       <form
         onSubmit={handleSubmit}
-        className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto border border-[var(--border-hover)] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-[var(--border-hover)] shadow-2xl"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-[var(--text-primary)]">
@@ -180,10 +186,10 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
           </div>
 
           {/* 状态和优先级 */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-[var(--text-secondary)] mb-2">状态</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {[
                   { value: 'active', label: '进行中', color: 'emerald' },
                   { value: 'completed', label: '已完成', color: 'blue' },
@@ -237,74 +243,80 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
             </div>
           </div>
 
-          {/* 截止日期 */}
-          <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-2">
-              截止日期（快照/TGE）
-            </label>
-            <DatePicker
-              value={deadline}
-              onChange={setDeadline}
-              placeholder="选择截止日期"
-            />
+          {/* 截止日期和标签 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-[var(--text-secondary)] mb-2">
+                截止日期（快照/TGE）
+              </label>
+              <DatePicker
+                value={deadline}
+                onChange={setDeadline}
+                placeholder="选择截止日期"
+              />
+            </div>
+
+            {/* 标签 */}
+            <div>
+              <label className="block text-sm text-[var(--text-secondary)] mb-2">标签</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addTag(newTag)
+                    }
+                  }}
+                  placeholder="输入标签，回车添加"
+                  className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => addTag(newTag)}
+                  className="px-3 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl text-sm transition-colors text-white"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* 标签 */}
-          <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-2">标签</label>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {tags.map((tag, i) => (
-                  <span
-                    key={i}
-                    className="px-2.5 py-1 bg-violet-500/20 text-violet-400 rounded-lg text-xs font-medium flex items-center gap-1.5"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => setTags(tags.filter((_, idx) => idx !== i))}
-                      className="hover:text-white transition-colors"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className="flex gap-2 mb-3">
-              <input
-                type="text"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addTag(newTag)
-                  }
-                }}
-                placeholder="输入自定义标签，回车添加"
-                className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
-              />
-              <button
-                type="button"
-                onClick={() => addTag(newTag)}
-                className="px-3 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl text-sm transition-colors text-white"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
+          {/* 已选标签 */}
+          {tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {PRESET_TAGS.filter(t => !tags.includes(t)).slice(0, 12).map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => addTag(tag)}
-                  className="px-2.5 py-1 bg-[var(--input-bg)] text-[var(--text-muted)] rounded-lg text-xs font-medium hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+              {tags.map((tag, i) => (
+                <span
+                  key={i}
+                  className="px-2.5 py-1 bg-violet-500/20 text-violet-400 rounded-lg text-xs font-medium flex items-center gap-1.5"
                 >
-                  + {tag}
-                </button>
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => setTags(tags.filter((_, idx) => idx !== i))}
+                    className="hover:text-white transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
               ))}
             </div>
+          )}
+
+          {/* 预设标签 */}
+          <div className="flex flex-wrap gap-1.5">
+            {PRESET_TAGS.filter(t => !tags.includes(t)).map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => addTag(tag)}
+                className="px-2.5 py-1 bg-[var(--input-bg)] text-[var(--text-muted)] rounded-lg text-xs font-medium hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+              >
+                + {tag}
+              </button>
+            ))}
           </div>
 
           {/* 备注 */}
@@ -314,7 +326,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all resize-none placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
-              rows={3}
+              rows={2}
               placeholder="其他备注信息..."
             />
           </div>
