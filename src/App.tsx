@@ -8,9 +8,10 @@ import { GistSync } from './components/GistSync'
 import { StatsChart } from './components/StatsChart'
 import { BatchActions } from './components/BatchActions'
 import { ThemeToggle } from './components/ThemeToggle'
+import { Tooltip } from './components/Tooltip'
+import { Dropdown } from './components/Dropdown'
 import type { Project, ProjectStatus, Priority } from './types'
 import { Target, Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc } from 'lucide-react'
-import { Dropdown } from './components/Dropdown'
 
 type FilterStatus = ProjectStatus | 'all'
 type SortBy = 'updated' | 'priority' | 'deadline' | 'name'
@@ -129,13 +130,14 @@ function App() {
               {/* 操作按钮 */}
               {!selectionMode ? (
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setSelectionMode(true)}
-                    className="p-2.5 bg-[var(--bg-tertiary)] rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
-                    title="批量操作"
-                  >
-                    <CheckSquare className="w-4 h-4" />
-                  </button>
+                  <Tooltip content="批量操作">
+                    <button
+                      onClick={() => setSelectionMode(true)}
+                      className="p-2.5 bg-[var(--bg-tertiary)] rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
+                    >
+                      <CheckSquare className="w-4 h-4" />
+                    </button>
+                  </Tooltip>
                   <button
                     onClick={() => setShowForm(true)}
                     className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl hover:from-violet-500 hover:to-purple-500 font-medium flex items-center gap-2 shadow-lg shadow-violet-500/25 transition-all hover:shadow-violet-500/40 text-white text-sm"
@@ -155,9 +157,7 @@ function App() {
               )}
             </div>
           </div>
-        </header>
-
-        {/* Stats Overview */}
+        </header>        {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
             { label: '总项目', value: stats.total, gradient: 'from-gray-600 to-gray-700', shadow: 'shadow-gray-500/10' },

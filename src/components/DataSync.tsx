@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { useStore } from '../store/useStore'
+import { Tooltip } from './Tooltip'
 import { Download, Upload } from 'lucide-react'
 
 export function DataSync() {
@@ -37,20 +38,22 @@ export function DataSync() {
 
   return (
     <>
-      <button
-        onClick={handleExport}
-        className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
-        title="导出数据"
-      >
-        <Download className="w-4 h-4" />
-      </button>
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
-        title="导入数据"
-      >
-        <Upload className="w-4 h-4" />
-      </button>
+      <Tooltip content="导出数据">
+        <button
+          onClick={handleExport}
+          className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
+        >
+          <Download className="w-4 h-4" />
+        </button>
+      </Tooltip>
+      <Tooltip content="导入数据">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
+        >
+          <Upload className="w-4 h-4" />
+        </button>
+      </Tooltip>
       <input
         ref={fileInputRef}
         type="file"

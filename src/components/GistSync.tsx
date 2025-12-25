@@ -10,6 +10,7 @@ import {
   pullFromGist,
   type GistInfo,
 } from '../utils/gistSync'
+import { Tooltip } from './Tooltip'
 import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown } from 'lucide-react'
 
 export function GistSync() {
@@ -145,49 +146,53 @@ export function GistSync() {
       <div className="flex items-center gap-1">
         {isConfigured ? (
           <>
-            <button
-              onClick={handlePush}
-              disabled={pushing || pulling}
-              className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-500/10 transition-all disabled:opacity-50"
-              title="推送到云端"
-            >
-              {pushing ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Cloud className="w-4 h-4" />
-              )}
-            </button>
-            <button
-              onClick={handlePull}
-              disabled={pushing || pulling}
-              className="p-2 rounded-lg text-blue-400 hover:bg-blue-500/10 transition-all disabled:opacity-50"
-              title="从云端拉取"
-            >
-              {pulling ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setShowSettings(true)
-                loadGistList(token)
-              }}
-              className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
-              title="同步设置"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
+            <Tooltip content="推送到云端">
+              <button
+                onClick={handlePush}
+                disabled={pushing || pulling}
+                className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-500/10 transition-all disabled:opacity-50"
+              >
+                {pushing ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Cloud className="w-4 h-4" />
+                )}
+              </button>
+            </Tooltip>
+            <Tooltip content="从云端拉取">
+              <button
+                onClick={handlePull}
+                disabled={pushing || pulling}
+                className="p-2 rounded-lg text-blue-400 hover:bg-blue-500/10 transition-all disabled:opacity-50"
+              >
+                {pulling ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+              </button>
+            </Tooltip>
+            <Tooltip content="同步设置">
+              <button
+                onClick={() => {
+                  setShowSettings(true)
+                  loadGistList(token)
+                }}
+                className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            </Tooltip>
           </>
         ) : (
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
-            title="配置云同步"
-          >
-            <CloudOff className="w-4 h-4" />
-          </button>
+          <Tooltip content="配置云同步">
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
+            >
+              <CloudOff className="w-4 h-4" />
+            </button>
+          </Tooltip>
         )}
       </div>
 

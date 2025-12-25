@@ -1,5 +1,6 @@
 import { useStore } from '../store/useStore'
 import type { ProjectStatus } from '../types'
+import { Tooltip } from './Tooltip'
 import { Trash2, CheckCircle, XCircle, Rocket, Skull } from 'lucide-react'
 
 interface Props {
@@ -33,45 +34,50 @@ export function BatchActions({ selectedIds, onClear }: Props) {
       <div className="h-6 w-px bg-[var(--border)]" />
       
       <div className="flex gap-1">
-        <button
-          onClick={() => handleStatusChange('active')}
-          className="p-2 hover:bg-emerald-500/20 rounded-lg text-[var(--text-secondary)] hover:text-emerald-400 transition-colors"
-          title="标记为进行中"
-        >
-          <CheckCircle className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => handleStatusChange('completed')}
-          className="p-2 hover:bg-blue-500/20 rounded-lg text-[var(--text-secondary)] hover:text-blue-400 transition-colors"
-          title="标记为已完成"
-        >
-          <XCircle className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => handleStatusChange('launched')}
-          className="p-2 hover:bg-violet-500/20 rounded-lg text-[var(--text-secondary)] hover:text-violet-400 transition-colors"
-          title="标记为已发币"
-        >
-          <Rocket className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => handleStatusChange('dead')}
-          className="p-2 hover:bg-gray-500/20 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-muted)] transition-colors"
-          title="标记为已凉"
-        >
-          <Skull className="w-4 h-4" />
-        </button>
+        <Tooltip content="进行中" position="top">
+          <button
+            onClick={() => handleStatusChange('active')}
+            className="p-2 hover:bg-emerald-500/20 rounded-lg text-[var(--text-secondary)] hover:text-emerald-400 transition-colors"
+          >
+            <CheckCircle className="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <Tooltip content="已完成" position="top">
+          <button
+            onClick={() => handleStatusChange('completed')}
+            className="p-2 hover:bg-blue-500/20 rounded-lg text-[var(--text-secondary)] hover:text-blue-400 transition-colors"
+          >
+            <XCircle className="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <Tooltip content="已发币" position="top">
+          <button
+            onClick={() => handleStatusChange('launched')}
+            className="p-2 hover:bg-violet-500/20 rounded-lg text-[var(--text-secondary)] hover:text-violet-400 transition-colors"
+          >
+            <Rocket className="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <Tooltip content="已凉" position="top">
+          <button
+            onClick={() => handleStatusChange('dead')}
+            className="p-2 hover:bg-gray-500/20 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-muted)] transition-colors"
+          >
+            <Skull className="w-4 h-4" />
+          </button>
+        </Tooltip>
       </div>
 
       <div className="h-6 w-px bg-[var(--border)]" />
 
-      <button
-        onClick={handleDelete}
-        className="p-2 hover:bg-red-500/20 rounded-lg text-[var(--text-secondary)] hover:text-red-400 transition-colors"
-        title="删除选中"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
+      <Tooltip content="删除选中" position="top">
+        <button
+          onClick={handleDelete}
+          className="p-2 hover:bg-red-500/20 rounded-lg text-[var(--text-secondary)] hover:text-red-400 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </Tooltip>
 
       <button
         onClick={onClear}
