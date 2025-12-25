@@ -105,6 +105,11 @@ export function GistSync() {
       } else {
         showMessage('success', '已同步到云端')
       }
+    } else if (result.needSelect) {
+      // 需要先选择 Gist
+      showMessage('error', result.error || '请先选择云端存储')
+      setShowSettings(true)
+      await loadGistList(token)
     } else {
       showMessage('error', result.error || '同步失败')
     }

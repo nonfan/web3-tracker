@@ -157,7 +157,7 @@ export async function deleteGist(token: string, gistId: string): Promise<boolean
 }
 
 // 同步数据到 Gist
-export async function syncToGist(data: string): Promise<{ success: boolean; error?: string }> {
+export async function syncToGist(data: string): Promise<{ success: boolean; error?: string; needSelect?: boolean }> {
   const config = getGistConfig()
   if (!config?.token) {
     return { success: false, error: '未配置 GitHub Token' }
@@ -165,6 +165,7 @@ export async function syncToGist(data: string): Promise<{ success: boolean; erro
 
   try {
     if (config.gistId) {
+      // 已选择 Gist，直接更新
       try {
         await updateGist(config.token, config.gistId, data)
       } catch (e) {
@@ -176,6 +177,13 @@ export async function syncToGist(data: string): Promise<{ success: boolean; erro
         }
       }
     } else {
+      // 没有选择 Gist，检查是否已有
+      const existingGists = await findAllGists(config.token)
+      if (existingGists.length > 0) {
+        // 已有 Gist，提示用户选择
+        return { success: false, needSelect: true, error: `已有 ${existingGists.length} 个云端存储，请先在设置中选择要使用的存储，或删除不需要的` }
+      }
+      // 没有已有的，创建新的
       const gistId = await createGist(config.token, data)
       saveGistConfig({ ...config, gistId })
     }
