@@ -49,18 +49,27 @@ export function GistSync() {
       return
     }
 
-    // 如果没有手动填 Gist ID，但找到了已有的 Gist，自动使用
-    const finalGistId = gistId || result.gistId || null
+    // 优先使用手动填写的 Gist ID
+    let finalGistId = gistId || null
+    
+    // 只有没有手动填写时才尝试自动查找
+    if (!finalGistId && result.gistId) {
+      // 找到了已有的 Gist，询问是否使用
+      const useExisting = confirm(`找到已有的云端数据 (ID: ${result.gistId.slice(0, 8)}...)，是否使用？\n\n点击"取消"将创建新的存储。`)
+      if (useExisting) {
+        finalGistId = result.gistId
+      }
+    }
     
     saveGistConfig({ token, gistId: finalGistId })
     setGistId(finalGistId || '')
     setIsConfigured(true)
     setShowSettings(false)
     
-    if (result.gistId && !gistId) {
-      showMessage('success', '已找到云端数据，可以拉取')
+    if (finalGistId) {
+      showMessage('success', '配置已保存，可以拉取数据')
     } else {
-      showMessage('success', '配置已保存')
+      showMessage('success', '配置已保存，推送时将创建新存储')
     }
     setSaving(false)
   }
