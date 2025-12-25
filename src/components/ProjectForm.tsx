@@ -99,9 +99,9 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-[var(--border-hover)] shadow-2xl"
+        className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-3xl border border-[var(--border-hover)] shadow-2xl"
       >
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-semibold text-[var(--text-primary)]">
             {project ? '编辑项目' : '添加项目'}
           </h2>
@@ -114,82 +114,84 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
           </button>
         </div>
 
-        <div className="space-y-5">
-          {/* 项目名称 */}
-          <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-2">
-              项目名称 <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
-              placeholder="如：LayerZero"
-              required
-            />
-          </div>
-
-          {/* 描述 */}
-          <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-2">描述</label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
-              placeholder="简短描述"
-            />
-          </div>
-
-          {/* 链接 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* 两栏布局 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 左栏 */}
+          <div className="space-y-4">
+            {/* 项目名称 */}
             <div>
-              <label className="block text-sm text-[var(--text-secondary)] mb-2 flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5" /> 官网
-              </label>
-              <input
-                type="url"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
-                placeholder="https://..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-[var(--text-secondary)] mb-2 flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                Twitter
+              <label className="block text-sm text-[var(--text-secondary)] mb-1.5">
+                项目名称 <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
-                value={twitter}
-                onChange={(e) => setTwitter(e.target.value)}
-                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
-                placeholder="用户名"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+                placeholder="如：LayerZero"
+                required
               />
             </div>
-            <div>
-              <label className="block text-sm text-[var(--text-secondary)] mb-2 flex items-center gap-1.5">
-                <MessageCircle className="w-3.5 h-3.5" /> Discord
-              </label>
-              <input
-                type="url"
-                value={discord}
-                onChange={(e) => setDiscord(e.target.value)}
-                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
-                placeholder="邀请链接"
-              />
-            </div>
-          </div>
 
-          {/* 状态和优先级 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 描述 */}
             <div>
-              <label className="block text-sm text-[var(--text-secondary)] mb-2">状态</label>
-              <div className="grid grid-cols-4 gap-2">
+              <label className="block text-sm text-[var(--text-secondary)] mb-1.5">描述</label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+                placeholder="简短描述"
+              />
+            </div>
+
+            {/* 链接 */}
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1.5 flex items-center gap-1">
+                  <Globe className="w-3 h-3" /> 官网
+                </label>
+                <input
+                  type="url"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1.5 flex items-center gap-1">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  Twitter
+                </label>
+                <input
+                  type="text"
+                  value={twitter}
+                  onChange={(e) => setTwitter(e.target.value)}
+                  className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+                  placeholder="用户名"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1.5 flex items-center gap-1">
+                  <MessageCircle className="w-3 h-3" /> Discord
+                </label>
+                <input
+                  type="url"
+                  value={discord}
+                  onChange={(e) => setDiscord(e.target.value)}
+                  className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+                  placeholder="邀请链接"
+                />
+              </div>
+            </div>
+
+            {/* 状态 */}
+            <div>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1.5">状态</label>
+              <div className="grid grid-cols-4 gap-1.5">
                 {[
                   { value: 'active', label: '进行中', color: 'emerald' },
                   { value: 'completed', label: '已完成', color: 'blue' },
@@ -214,51 +216,52 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
                 ))}
               </div>
             </div>
-            <div>
-              <label className="block text-sm text-[var(--text-secondary)] mb-2 flex items-center gap-1.5">
-                <Flag className="w-3.5 h-3.5" /> 优先级
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { value: 'high', label: '高', color: 'red' },
-                  { value: 'medium', label: '中', color: 'amber' },
-                  { value: 'low', label: '低', color: 'gray' },
-                ].map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => setPriority(p.value as Priority)}
-                    className={`py-2 rounded-lg text-xs font-medium transition-all ${
-                      priority === p.value
-                        ? p.color === 'red' ? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/50'
-                        : p.color === 'amber' ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/50'
-                        : 'bg-gray-500/20 text-gray-400 ring-1 ring-gray-500/50'
-                        : 'bg-[var(--input-bg)] text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-secondary)]'
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
+
+            {/* 优先级和截止日期 */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm text-[var(--text-secondary)] mb-1.5 flex items-center gap-1">
+                  <Flag className="w-3.5 h-3.5" /> 优先级
+                </label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { value: 'high', label: '高', color: 'red' },
+                    { value: 'medium', label: '中', color: 'amber' },
+                    { value: 'low', label: '低', color: 'gray' },
+                  ].map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setPriority(p.value as Priority)}
+                      className={`py-2 rounded-lg text-xs font-medium transition-all ${
+                        priority === p.value
+                          ? p.color === 'red' ? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/50'
+                          : p.color === 'amber' ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/50'
+                          : 'bg-gray-500/20 text-gray-400 ring-1 ring-gray-500/50'
+                          : 'bg-[var(--input-bg)] text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-secondary)]'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-[var(--text-secondary)] mb-1.5">截止日期</label>
+                <DatePicker
+                  value={deadline}
+                  onChange={setDeadline}
+                  placeholder="选择日期"
+                />
               </div>
             </div>
           </div>
 
-          {/* 截止日期和标签 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* 右栏 */}
+          <div className="space-y-4">
+            {/* 标签输入 */}
             <div>
-              <label className="block text-sm text-[var(--text-secondary)] mb-2">
-                截止日期（快照/TGE）
-              </label>
-              <DatePicker
-                value={deadline}
-                onChange={setDeadline}
-                placeholder="选择截止日期"
-              />
-            </div>
-
-            {/* 标签 */}
-            <div>
-              <label className="block text-sm text-[var(--text-secondary)] mb-2">标签</label>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1.5">标签</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -271,7 +274,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
                     }
                   }}
                   placeholder="输入标签，回车添加"
-                  className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+                  className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
                 />
                 <button
                   type="button"
@@ -282,68 +285,68 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* 已选标签 */}
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {tags.map((tag, i) => (
-                <span
-                  key={i}
-                  className="px-2.5 py-1 bg-violet-500/20 text-violet-400 rounded-lg text-xs font-medium flex items-center gap-1.5"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => setTags(tags.filter((_, idx) => idx !== i))}
-                    className="hover:text-white transition-colors"
+            {/* 已选标签 */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {tags.map((tag, i) => (
+                  <span
+                    key={i}
+                    className="px-2.5 py-1 bg-violet-500/20 text-violet-400 rounded-lg text-xs font-medium flex items-center gap-1.5"
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => setTags(tags.filter((_, idx) => idx !== i))}
+                      className="hover:text-white transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* 预设标签 */}
+            <div className="flex flex-wrap gap-1.5">
+              {PRESET_TAGS.filter(t => !tags.includes(t)).map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => addTag(tag)}
+                  className="px-2 py-1 bg-[var(--input-bg)] text-[var(--text-muted)] rounded-lg text-xs font-medium hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+                >
+                  + {tag}
+                </button>
               ))}
             </div>
-          )}
 
-          {/* 预设标签 */}
-          <div className="flex flex-wrap gap-1.5">
-            {PRESET_TAGS.filter(t => !tags.includes(t)).map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => addTag(tag)}
-                className="px-2.5 py-1 bg-[var(--input-bg)] text-[var(--text-muted)] rounded-lg text-xs font-medium hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
-              >
-                + {tag}
-              </button>
-            ))}
-          </div>
-
-          {/* 备注 */}
-          <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-2">备注</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all resize-none placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
-              rows={2}
-              placeholder="其他备注信息..."
-            />
+            {/* 备注 */}
+            <div>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1.5">备注</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-violet-500/50 transition-all resize-none placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+                rows={3}
+                placeholder="其他备注信息..."
+              />
+            </div>
           </div>
         </div>
 
         {/* 按钮 */}
-        <div className="flex gap-3 mt-6">
+        <div className="flex gap-3 mt-5 pt-5 border-t border-[var(--border)]">
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 py-3 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-all"
+            className="flex-1 py-2.5 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-all"
           >
             取消
           </button>
           <button
             type="submit"
-            className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl font-medium hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-500/20 text-white"
+            className="flex-1 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl font-medium hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-500/20 text-white"
           >
             {project ? '保存' : '添加'}
           </button>
