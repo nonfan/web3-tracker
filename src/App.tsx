@@ -10,6 +10,7 @@ import { BatchActions } from './components/BatchActions'
 import { ThemeToggle } from './components/ThemeToggle'
 import type { Project, ProjectStatus, Priority } from './types'
 import { Target, Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc } from 'lucide-react'
+import { Dropdown } from './components/Dropdown'
 
 type FilterStatus = ProjectStatus | 'all'
 type SortBy = 'updated' | 'priority' | 'deadline' | 'name'
@@ -192,19 +193,17 @@ function App() {
             </div>
             
             {/* Sort */}
-            <div className="flex items-center gap-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-3">
-              <SortAsc className="w-4 h-4 text-[var(--text-muted)]" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortBy)}
-                className="bg-transparent py-2.5 text-sm text-[var(--text-secondary)] outline-none"
-              >
-                <option value="updated">最近更新</option>
-                <option value="priority">优先级</option>
-                <option value="deadline">截止日期</option>
-                <option value="name">名称</option>
-              </select>
-            </div>
+            <Dropdown
+              value={sortBy}
+              onChange={(v) => setSortBy(v as SortBy)}
+              icon={<SortAsc className="w-4 h-4 text-[var(--text-muted)]" />}
+              options={[
+                { value: 'updated', label: '最近更新' },
+                { value: 'priority', label: '优先级' },
+                { value: 'deadline', label: '截止日期' },
+                { value: 'name', label: '名称' },
+              ]}
+            />
 
             {/* Status Filter */}
             <div className="flex gap-1 bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--border)]">
