@@ -98,50 +98,61 @@ function App() {
 
   return (
     <div className={`min-h-screen transition-colors ${theme === 'dark' ? 'bg-gradient-to-br from-[#0a0a0f] via-[#0f0f18] to-[#0a0a0f]' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'}`}>
-      <div className="p-4 md:p-8 max-w-7xl mx-auto">
+      <div className="p-4 md:p-6 max-w-7xl mx-auto">
         {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
-              <Target className="w-5 h-5 text-white" />
+        <header className="bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-4 mb-6 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Logo & Title */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/25">
+                <Target className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  Web3 Tracker
+                </h1>
+                <p className="text-[var(--text-muted)] text-xs">撸毛项目追踪管理</p>
+              </div>
             </div>
-            <div>
-              <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'bg-gradient-to-r from-white to-gray-400' : 'bg-gradient-to-r from-gray-900 to-gray-600'} bg-clip-text text-transparent`}>
-                Web3 Tracker
-              </h1>
-              <p className="text-[var(--text-secondary)] text-sm">撸毛项目追踪管理</p>
+            
+            {/* Actions */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* 工具按钮组 */}
+              <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-xl">
+                <ThemeToggle />
+                <div className="w-px h-5 bg-[var(--border)]" />
+                <GistSync />
+                <DataSync />
+              </div>
+              
+              {/* 操作按钮 */}
+              {!selectionMode ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSelectionMode(true)}
+                    className="p-2.5 bg-[var(--bg-tertiary)] rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
+                    title="批量操作"
+                  >
+                    <CheckSquare className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setShowForm(true)}
+                    className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl hover:from-violet-500 hover:to-purple-500 font-medium flex items-center gap-2 shadow-lg shadow-violet-500/25 transition-all hover:shadow-violet-500/40 text-white text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    添加项目
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={exitSelectionMode}
+                  className="px-4 py-2.5 bg-[var(--bg-tertiary)] rounded-xl text-sm flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
+                >
+                  <X className="w-4 h-4" />
+                  退出批量
+                </button>
+              )}
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <GistSync />
-            <DataSync />
-            {!selectionMode ? (
-              <>
-                <button
-                  onClick={() => setSelectionMode(true)}
-                  className="px-3 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-sm hover:border-[var(--border-hover)] flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
-                >
-                  <CheckSquare className="w-4 h-4" />
-                  批量
-                </button>
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl hover:from-violet-500 hover:to-purple-500 font-medium flex items-center gap-2 shadow-lg shadow-violet-500/20 transition-all hover:shadow-violet-500/30 text-white"
-                >
-                  <Plus className="w-4 h-4" />
-                  添加项目
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={exitSelectionMode}
-                className="px-4 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-sm hover:border-[var(--border-hover)] flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
-              >
-                <X className="w-4 h-4" />
-                退出批量
-              </button>
-            )}
           </div>
         </header>
 

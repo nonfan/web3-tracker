@@ -142,13 +142,13 @@ export function GistSync() {
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         {isConfigured ? (
           <>
             <button
               onClick={handlePush}
               disabled={pushing || pulling}
-              className="px-3 py-2.5 bg-emerald-600/20 border border-emerald-500/30 rounded-xl text-sm hover:bg-emerald-600/30 flex items-center gap-2 text-emerald-400 transition-all disabled:opacity-50"
+              className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-500/10 transition-all disabled:opacity-50"
               title="推送到云端"
             >
               {pushing ? (
@@ -156,12 +156,11 @@ export function GistSync() {
               ) : (
                 <Cloud className="w-4 h-4" />
               )}
-              推送
             </button>
             <button
               onClick={handlePull}
               disabled={pushing || pulling}
-              className="px-3 py-2.5 bg-blue-600/20 border border-blue-500/30 rounded-xl text-sm hover:bg-blue-600/30 flex items-center gap-2 text-blue-400 transition-all disabled:opacity-50"
+              className="p-2 rounded-lg text-blue-400 hover:bg-blue-500/10 transition-all disabled:opacity-50"
               title="从云端拉取"
             >
               {pulling ? (
@@ -169,29 +168,25 @@ export function GistSync() {
               ) : (
                 <RefreshCw className="w-4 h-4" />
               )}
-              拉取
+            </button>
+            <button
+              onClick={() => {
+                setShowSettings(true)
+                loadGistList(token)
+              }}
+              className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
+              title="同步设置"
+            >
+              <Settings className="w-4 h-4" />
             </button>
           </>
         ) : (
           <button
             onClick={() => setShowSettings(true)}
-            className="px-3 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-sm hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-hover)] flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+            className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
+            title="配置云同步"
           >
             <CloudOff className="w-4 h-4" />
-            云同步
-          </button>
-        )}
-        
-        {isConfigured && (
-          <button
-            onClick={() => {
-              setShowSettings(true)
-              loadGistList(token)
-            }}
-            className="p-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-sm hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
-            title="同步设置"
-          >
-            <Settings className="w-4 h-4" />
           </button>
         )}
       </div>

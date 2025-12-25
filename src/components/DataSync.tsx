@@ -36,20 +36,20 @@ export function DataSync() {
   }
 
   return (
-    <div className="flex gap-2">
+    <>
       <button
         onClick={handleExport}
-        className="px-3 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-sm hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-hover)] flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+        className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
+        title="导出数据"
       >
         <Download className="w-4 h-4" />
-        导出
       </button>
       <button
         onClick={() => fileInputRef.current?.click()}
-        className="px-3 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-sm hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-hover)] flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+        className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
+        title="导入数据"
       >
         <Upload className="w-4 h-4" />
-        导入
       </button>
       <input
         ref={fileInputRef}
@@ -58,6 +58,6 @@ export function DataSync() {
         onChange={handleImport}
         className="hidden"
       />
-    </div>
+    </>
   )
 }
