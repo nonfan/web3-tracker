@@ -68,10 +68,14 @@ export function GistSync() {
     const data = exportData()
     const result = await syncToGist(data)
     if (result.success) {
-      showMessage('success', '已同步到云端')
       // 更新 gistId
       const config = getGistConfig()
-      if (config?.gistId) setGistId(config.gistId)
+      if (config?.gistId) {
+        setGistId(config.gistId)
+        showMessage('success', `已同步到云端，Gist ID: ${config.gistId.slice(0, 8)}...`)
+      } else {
+        showMessage('success', '已同步到云端')
+      }
     } else {
       showMessage('error', result.error || '同步失败')
     }
@@ -217,17 +221,35 @@ export function GistSync() {
 
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
-                  Gist ID（可选，留空自动创建）
+                  Gist ID（跨设备同步必填）
                 </label>
-                <input
-                  type="text"
-                  value={gistId}
-                  onChange={(e) => setGistId(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-gray-600"
-                  placeholder="如果已有 Gist，填入 ID"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={gistId}
+                    onChange={(e) => setGistId(e.target.value)}
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-gray-600"
+                    placeholder="首次推送后自动生成"
+                  />
+                  {gistId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(gistId)
+                        showMessage('success', 'Gist ID 已复制')
+                      }}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                    >
+                      复制
+                    </button>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Gist URL 格式: https://gist.github.com/用户名/<span className="text-violet-400">这里是ID</span>
+                  {gistId ? (
+                    <span className="text-emerald-400">✓ 在其他设备上填入此 ID 即可同步数据</span>
+                  ) : (
+                    '首次推送会自动创建 Gist，之后在其他设备填入相同的 Token 和 Gist ID'
+                  )}
                 </p>
               </div>
             </div>
