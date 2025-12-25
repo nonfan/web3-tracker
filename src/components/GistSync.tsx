@@ -219,13 +219,27 @@ export function GistSync() {
                 <label className="block text-sm text-gray-400 mb-2">
                   GitHub Token <span className="text-red-400">*</span>
                 </label>
-                <input
-                  type="password"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-gray-600"
-                  placeholder="ghp_xxxxxxxxxxxx"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-gray-600"
+                    placeholder="ghp_xxxxxxxxxxxx"
+                  />
+                  {token && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(token)
+                        showMessage('success', 'Token 已复制')
+                      }}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                    >
+                      复制
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div>
