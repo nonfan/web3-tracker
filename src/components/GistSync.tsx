@@ -40,17 +40,26 @@ export function GistSync() {
     }
 
     setSyncing(true)
-    const valid = await validateToken(token)
-    if (!valid) {
+    const result = await validateToken(token)
+    if (!result.valid) {
       showMessage('error', 'Token 无效，请检查')
       setSyncing(false)
       return
     }
 
-    saveGistConfig({ token, gistId: gistId || null })
+    // 如果没有手动填 Gist ID，但找到了已有的 Gist，自动使用
+    const finalGistId = gistId || result.gistId || null
+    
+    saveGistConfig({ token, gistId: finalGistId })
+    setGistId(finalGistId || '')
     setIsConfigured(true)
     setShowSettings(false)
-    showMessage('success', '配置已保存')
+    
+    if (result.gistId && !gistId) {
+      showMessage('success', '已找到云端数据，可以拉取')
+    } else {
+      showMessage('success', '配置已保存')
+    }
     setSyncing(false)
   }
 
@@ -246,9 +255,9 @@ export function GistSync() {
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   {gistId ? (
-                    <span className="text-emerald-400">✓ 在其他设备上填入此 ID 即可同步数据</span>
+                    <span className="text-emerald-400">✓ 在其他设备上只需填入相同 Token 即可自动找到</span>
                   ) : (
-                    '首次推送会自动创建 Gist，之后在其他设备填入相同的 Token 和 Gist ID'
+                    '首次推送会自动创建，其他设备只需填 Token 会自动查找'
                   )}
                 </p>
               </div>
