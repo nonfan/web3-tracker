@@ -186,15 +186,10 @@ export function GistSync() {
               <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl text-sm text-violet-300">
                 <p className="mb-2">数据将存储在你的私有 GitHub Gist 中，完全安全。</p>
                 <p>
-                  需要创建一个{' '}
-                  <a
-                    href="https://github.com/settings/tokens/new?scopes=gist&description=Web3Tracker"
-                    target="_blank"
-                    className="text-violet-400 underline"
-                  >
-                    Personal Access Token
-                  </a>
-                  ，勾选 <code className="bg-white/10 px-1 rounded">gist</code> 权限。
+                  需要创建一个 Personal Access Token，勾选 <code className="bg-white/10 px-1 rounded">gist</code> 权限。
+                </p>
+                <p className="mt-2 text-xs text-gray-400">
+                  路径: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token
                 </p>
               </div>
 
