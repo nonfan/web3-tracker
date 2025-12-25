@@ -8,9 +8,10 @@ import {
   findAllGists,
   syncToGist,
   pullFromGist,
+  deleteGist,
   type GistInfo,
 } from '../utils/gistSync'
-import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown } from 'lucide-react'
+import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown, Trash2 } from 'lucide-react'
 
 export function GistSync() {
   const { exportData, importData } = useStore()
@@ -23,6 +24,7 @@ export function GistSync() {
   const [pulling, setPulling] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loadingGists, setLoadingGists] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
@@ -133,6 +135,25 @@ export function GistSync() {
       hour: '2-digit',
       minute: '2-digit',
     })
+  }
+
+  const handleDeleteGist = async (gistIdToDelete: string) => {
+    if (!confirm(`确定删除这个云端存储？\n\nGist ID: ${gistIdToDelete}\n\n此操作不可恢复！`)) {
+      return
+    }
+    
+    setDeleting(gistIdToDelete)
+    const success = await deleteGist(token, gistIdToDelete)
+    if (success) {
+      setGistList(gistList.filter(g => g.id !== gistIdToDelete))
+      if (gistId === gistIdToDelete) {
+        setGistId('')
+      }
+      showMessage('success', '已删除')
+    } else {
+      showMessage('error', '删除失败')
+    }
+    setDeleting(null)
   }
 
   return (
@@ -304,24 +325,47 @@ export function GistSync() {
                     未找到已有数据，推送时将创建新存储
                   </p>
                 )}
-                {gistId && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <input
-                      type="text"
-                      value={gistId}
-                      readOnly
-                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-400"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(gistId)
-                        showMessage('success', 'Gist ID 已复制')
-                      }}
-                      className="px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                    >
-                      复制
-                    </button>
+                {/* Gist 列表管理 */}
+                {gistList.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs text-gray-500">管理云端存储：</p>
+                    {gistList.map((gist) => (
+                      <div
+                        key={gist.id}
+                        className={`flex items-center justify-between p-2 rounded-lg ${
+                          gist.id === gistId ? 'bg-violet-500/10 border border-violet-500/30' : 'bg-white/5'
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-300 truncate">{gist.id}</p>
+                          <p className="text-xs text-gray-500">{formatDate(gist.updatedAt)}</p>
+                        </div>
+                        <div className="flex items-center gap-1 ml-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(gist.id)
+                              showMessage('success', 'ID 已复制')
+                            }}
+                            className="p-1.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors text-xs"
+                          >
+                            复制
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteGist(gist.id)}
+                            disabled={deleting === gist.id}
+                            className="p-1.5 hover:bg-red-500/20 rounded text-gray-500 hover:text-red-400 transition-colors disabled:opacity-50"
+                          >
+                            {deleting === gist.id ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

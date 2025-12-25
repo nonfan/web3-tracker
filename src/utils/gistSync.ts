@@ -141,6 +141,21 @@ async function readGist(token: string, gistId: string): Promise<string | null> {
   return file ? file.content : null
 }
 
+// 删除 Gist
+export async function deleteGist(token: string, gistId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    return response.status === 204
+  } catch {
+    return false
+  }
+}
+
 // 同步数据到 Gist
 export async function syncToGist(data: string): Promise<{ success: boolean; error?: string }> {
   const config = getGistConfig()
