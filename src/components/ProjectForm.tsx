@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import type { Project, ProjectStatus, Priority } from '../types'
 import { PRESET_TAGS } from '../utils/tagAnalyzer'
-import { X, Plus, Globe, MessageCircle, Calendar, Flag } from 'lucide-react'
+import { DatePicker } from './DatePicker'
+import { X, Plus, Globe, MessageCircle, Flag } from 'lucide-react'
 
 interface Props {
   project?: Project
@@ -238,14 +239,13 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
 
           {/* 截止日期 */}
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-2 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5" /> 截止日期（快照/TGE）
+            <label className="block text-sm text-[var(--text-secondary)] mb-2">
+              截止日期（快照/TGE）
             </label>
-            <input
-              type="date"
+            <DatePicker
               value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all text-[var(--text-secondary)]"
+              onChange={setDeadline}
+              placeholder="选择截止日期"
             />
           </div>
 
