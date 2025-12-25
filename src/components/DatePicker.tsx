@@ -88,8 +88,8 @@ export function DatePicker({ value, onChange, placeholder = '选择日期' }: Pr
         onClick={() => setIsOpen(!isOpen)}
         className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all text-left flex items-center gap-3"
       >
-        <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
-        <span className={value ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
+        <Calendar className="w-4 h-4 shrink-0 text-[var(--text-muted)]" />
+        <span className={`flex-1 ${value ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>
           {value ? formatDisplay(value) : placeholder}
         </span>
         {value && (
@@ -99,7 +99,7 @@ export function DatePicker({ value, onChange, placeholder = '选择日期' }: Pr
               e.stopPropagation()
               onChange('')
             }}
-            className="ml-auto p-1 hover:bg-[var(--bg-tertiary)] rounded text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            className="shrink-0 p-1 hover:bg-[var(--bg-tertiary)] rounded text-[var(--text-muted)] hover:text-[var(--text-primary)]"
           >
             <X className="w-3.5 h-3.5" />
           </button>
