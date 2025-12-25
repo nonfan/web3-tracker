@@ -16,7 +16,9 @@ export function GistSync() {
   const [showSettings, setShowSettings] = useState(false)
   const [token, setToken] = useState('')
   const [gistId, setGistId] = useState('')
-  const [syncing, setSyncing] = useState(false)
+  const [pushing, setPushing] = useState(false)
+  const [pulling, setPulling] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
@@ -39,11 +41,11 @@ export function GistSync() {
       return
     }
 
-    setSyncing(true)
+    setSaving(true)
     const result = await validateToken(token)
     if (!result.valid) {
       showMessage('error', 'Token 无效，请检查')
-      setSyncing(false)
+      setSaving(false)
       return
     }
 
@@ -60,7 +62,7 @@ export function GistSync() {
     } else {
       showMessage('success', '配置已保存')
     }
-    setSyncing(false)
+    setSaving(false)
   }
 
   const handleDisconnect = () => {
@@ -73,7 +75,7 @@ export function GistSync() {
   }
 
   const handlePush = async () => {
-    setSyncing(true)
+    setPushing(true)
     const data = exportData()
     const result = await syncToGist(data)
     if (result.success) {
@@ -88,11 +90,11 @@ export function GistSync() {
     } else {
       showMessage('error', result.error || '同步失败')
     }
-    setSyncing(false)
+    setPushing(false)
   }
 
   const handlePull = async () => {
-    setSyncing(true)
+    setPulling(true)
     const result = await pullFromGist()
     if (result.success && result.data) {
       const imported = importData(result.data)
@@ -104,7 +106,7 @@ export function GistSync() {
     } else {
       showMessage('error', result.error || '拉取失败')
     }
-    setSyncing(false)
+    setPulling(false)
   }
 
   return (
@@ -114,11 +116,11 @@ export function GistSync() {
           <>
             <button
               onClick={handlePush}
-              disabled={syncing}
+              disabled={pushing || pulling}
               className="px-3 py-2.5 bg-emerald-600/20 border border-emerald-500/30 rounded-xl text-sm hover:bg-emerald-600/30 flex items-center gap-2 text-emerald-400 transition-all disabled:opacity-50"
               title="推送到云端"
             >
-              {syncing ? (
+              {pushing ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
               ) : (
                 <Cloud className="w-4 h-4" />
@@ -127,11 +129,11 @@ export function GistSync() {
             </button>
             <button
               onClick={handlePull}
-              disabled={syncing}
+              disabled={pushing || pulling}
               className="px-3 py-2.5 bg-blue-600/20 border border-blue-500/30 rounded-xl text-sm hover:bg-blue-600/30 flex items-center gap-2 text-blue-400 transition-all disabled:opacity-50"
               title="从云端拉取"
             >
-              {syncing ? (
+              {pulling ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
               ) : (
                 <RefreshCw className="w-4 h-4" />
@@ -294,10 +296,10 @@ export function GistSync() {
               </button>
               <button
                 onClick={handleSaveConfig}
-                disabled={syncing}
+                disabled={saving}
                 className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl font-medium hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50"
               >
-                {syncing ? '验证中...' : '保存'}
+                {saving ? '验证中...' : '保存'}
               </button>
             </div>
           </div>
