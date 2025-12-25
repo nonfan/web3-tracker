@@ -1,11 +1,13 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useStore } from './store/useStore'
+import { useTheme } from './store/useTheme'
 import { ProjectCard } from './components/ProjectCard'
 import { ProjectForm } from './components/ProjectForm'
 import { DataSync } from './components/DataSync'
 import { GistSync } from './components/GistSync'
 import { StatsChart } from './components/StatsChart'
 import { BatchActions } from './components/BatchActions'
+import { ThemeToggle } from './components/ThemeToggle'
 import type { Project, ProjectStatus, Priority } from './types'
 import { Target, Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc } from 'lucide-react'
 
@@ -16,6 +18,7 @@ const priorityOrder: Record<Priority, number> = { high: 0, medium: 1, low: 2 }
 
 function App() {
   const { projects, addProject, updateProject } = useStore()
+  const { theme } = useTheme()
   const [showForm, setShowForm] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | undefined>()
   const [filter, setFilter] = useState<FilterStatus>('all')
@@ -24,6 +27,11 @@ function App() {
   const [sortBy, setSortBy] = useState<SortBy>('updated')
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  // 初始化主题
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
   // 获取所有标签
   const allTags = useMemo(() => {
@@ -89,7 +97,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#0f0f18] to-[#0a0a0f]">
+    <div className={`min-h-screen transition-colors ${theme === 'dark' ? 'bg-gradient-to-br from-[#0a0a0f] via-[#0f0f18] to-[#0a0a0f]' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'}`}>
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -98,27 +106,28 @@ function App() {
               <Target className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+              <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'bg-gradient-to-r from-white to-gray-400' : 'bg-gradient-to-r from-gray-900 to-gray-600'} bg-clip-text text-transparent`}>
                 Web3 Tracker
               </h1>
-              <p className="text-gray-500 text-sm">撸毛项目追踪管理</p>
+              <p className="text-[var(--text-secondary)] text-sm">撸毛项目追踪管理</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <GistSync />
             <DataSync />
             {!selectionMode ? (
               <>
                 <button
                   onClick={() => setSelectionMode(true)}
-                  className="px-3 py-2.5 bg-[#1a1a24] border border-white/5 rounded-xl text-sm hover:bg-[#22222e] hover:border-white/10 flex items-center gap-2 text-gray-400 hover:text-white transition-all"
+                  className="px-3 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-sm hover:border-[var(--border-hover)] flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
                 >
                   <CheckSquare className="w-4 h-4" />
                   批量
                 </button>
                 <button
                   onClick={() => setShowForm(true)}
-                  className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl hover:from-violet-500 hover:to-purple-500 font-medium flex items-center gap-2 shadow-lg shadow-violet-500/20 transition-all hover:shadow-violet-500/30"
+                  className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl hover:from-violet-500 hover:to-purple-500 font-medium flex items-center gap-2 shadow-lg shadow-violet-500/20 transition-all hover:shadow-violet-500/30 text-white"
                 >
                   <Plus className="w-4 h-4" />
                   添加项目
@@ -127,7 +136,7 @@ function App() {
             ) : (
               <button
                 onClick={exitSelectionMode}
-                className="px-4 py-2.5 bg-[#1a1a24] border border-white/5 rounded-xl text-sm hover:bg-[#22222e] flex items-center gap-2 text-gray-400 hover:text-white transition-all"
+                className="px-4 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-sm hover:border-[var(--border-hover)] flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
               >
                 <X className="w-4 h-4" />
                 退出批量
@@ -161,23 +170,23 @@ function App() {
         <div className="flex flex-col gap-3 mb-6">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="搜索项目..."
-                className="w-full bg-[#1a1a24] border border-white/5 rounded-xl pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-gray-600"
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
               />
             </div>
             
             {/* Sort */}
-            <div className="flex items-center gap-2 bg-[#1a1a24] border border-white/5 rounded-xl px-3">
-              <SortAsc className="w-4 h-4 text-gray-500" />
+            <div className="flex items-center gap-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-3">
+              <SortAsc className="w-4 h-4 text-[var(--text-muted)]" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortBy)}
-                className="bg-transparent py-2.5 text-sm text-gray-300 outline-none"
+                className="bg-transparent py-2.5 text-sm text-[var(--text-secondary)] outline-none"
               >
                 <option value="updated">最近更新</option>
                 <option value="priority">优先级</option>
@@ -187,7 +196,7 @@ function App() {
             </div>
 
             {/* Status Filter */}
-            <div className="flex gap-1 bg-[#1a1a24] p-1 rounded-xl border border-white/5">
+            <div className="flex gap-1 bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--border)]">
               {[
                 { value: 'all', label: '全部' },
                 { value: 'active', label: '进行中' },
@@ -201,7 +210,7 @@ function App() {
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     filter === f.value
                       ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                   }`}
                 >
                   {f.label}
@@ -213,7 +222,7 @@ function App() {
           {/* Tag Filter */}
           {allTags.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-gray-500">标签筛选:</span>
+              <span className="text-xs text-[var(--text-muted)]">标签筛选:</span>
               {tagFilter && (
                 <button
                   onClick={() => setTagFilter(null)}
@@ -229,7 +238,7 @@ function App() {
                   <button
                     key={tag}
                     onClick={() => setTagFilter(tag)}
-                    className="px-2 py-1 bg-white/5 text-gray-400 rounded-lg text-xs font-medium hover:bg-white/10 hover:text-white transition-colors"
+                    className="px-2 py-1 bg-[var(--bg-tertiary)] text-[var(--text-secondary)] rounded-lg text-xs font-medium hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors"
                   >
                     {tag} ({count})
                   </button>
@@ -259,17 +268,17 @@ function App() {
           <div className="text-center py-16">
             {projects.length === 0 ? (
               <div className="flex flex-col items-center gap-3">
-                <div className="w-16 h-16 bg-[#1a1a24] rounded-2xl flex items-center justify-center border border-white/5">
-                  <Inbox className="w-8 h-8 text-gray-600" />
+                <div className="w-16 h-16 bg-[var(--bg-secondary)] rounded-2xl flex items-center justify-center border border-[var(--border)]">
+                  <Inbox className="w-8 h-8 text-[var(--text-muted)]" />
                 </div>
-                <p className="text-gray-500">还没有项目，点击上方按钮添加第一个</p>
+                <p className="text-[var(--text-secondary)]">还没有项目，点击上方按钮添加第一个</p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3">
-                <div className="w-16 h-16 bg-[#1a1a24] rounded-2xl flex items-center justify-center border border-white/5">
-                  <FolderSearch className="w-8 h-8 text-gray-600" />
+                <div className="w-16 h-16 bg-[var(--bg-secondary)] rounded-2xl flex items-center justify-center border border-[var(--border)]">
+                  <FolderSearch className="w-8 h-8 text-[var(--text-muted)]" />
                 </div>
-                <p className="text-gray-500">没有找到匹配的项目</p>
+                <p className="text-[var(--text-secondary)]">没有找到匹配的项目</p>
               </div>
             )}
           </div>
