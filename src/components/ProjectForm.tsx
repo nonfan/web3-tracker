@@ -189,7 +189,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs text-[var(--text-secondary)] mb-1">状态</label>
-              <div className="grid grid-cols-4 gap-1">
+              <div className="grid grid-cols-4 gap-1 h-[34px]">
                 {[
                   { value: 'active', label: '进行中', color: 'emerald' },
                   { value: 'completed', label: '已完成', color: 'blue' },
@@ -200,7 +200,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
                     key={s.value}
                     type="button"
                     onClick={() => setStatus(s.value as ProjectStatus)}
-                    className={`py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    className={`h-full rounded-lg text-xs font-medium transition-all ${
                       status === s.value
                         ? s.color === 'emerald' ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/50'
                         : s.color === 'blue' ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50'
@@ -218,7 +218,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
               <label className="block text-xs text-[var(--text-secondary)] mb-1 flex items-center gap-1">
                 <Flag className="w-3 h-3 shrink-0" /> 优先级
               </label>
-              <div className="grid grid-cols-3 gap-1">
+              <div className="grid grid-cols-3 gap-1 h-[34px]">
                 {[
                   { value: 'high', label: '高', color: 'red' },
                   { value: 'medium', label: '中', color: 'amber' },
@@ -228,7 +228,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
                     key={p.value}
                     type="button"
                     onClick={() => setPriority(p.value as Priority)}
-                    className={`py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    className={`h-full rounded-lg text-xs font-medium transition-all ${
                       priority === p.value
                         ? p.color === 'red' ? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/50'
                         : p.color === 'amber' ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/50'

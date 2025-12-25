@@ -86,7 +86,7 @@ export function DatePicker({ value, onChange, placeholder = '选择日期' }: Pr
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all text-left flex items-center gap-3"
+        className="w-full h-[34px] bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all text-left flex items-center gap-2 text-sm"
       >
         <Calendar className="w-4 h-4 shrink-0 text-[var(--text-muted)]" />
         <span className={`flex-1 ${value ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>
