@@ -175,7 +175,7 @@ export function GistSync() {
         ) : (
           <button
             onClick={() => setShowSettings(true)}
-            className="px-3 py-2.5 bg-[#1a1a24] border border-white/5 rounded-xl text-sm hover:bg-[#22222e] hover:border-white/10 flex items-center gap-2 text-gray-400 hover:text-white transition-all"
+            className="px-3 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-sm hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-hover)] flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
           >
             <CloudOff className="w-4 h-4" />
             云同步
@@ -188,7 +188,7 @@ export function GistSync() {
               setShowSettings(true)
               loadGistList(token)
             }}
-            className="p-2.5 bg-[#1a1a24] border border-white/5 rounded-xl text-sm hover:bg-[#22222e] hover:border-white/10 text-gray-400 hover:text-white transition-all"
+            className="p-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-sm hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
             title="同步设置"
           >
             <Settings className="w-4 h-4" />
@@ -217,15 +217,15 @@ export function GistSync() {
       {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1a1a24] rounded-2xl p-6 w-full max-w-md border border-white/10 shadow-2xl">
+          <div className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-md border border-[var(--border-hover)] shadow-2xl">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
+              <h2 className="text-xl font-semibold flex items-center gap-2 text-[var(--text-primary)]">
                 <Cloud className="w-5 h-5 text-violet-400" />
                 GitHub Gist 同步
               </h2>
               <button
                 onClick={() => setShowSettings(false)}
-                className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-white transition-colors"
+                className="p-2 hover:bg-[var(--input-bg)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -246,13 +246,13 @@ export function GistSync() {
                   </a>
                   ，勾选 <code className="bg-white/10 px-1 rounded">gist</code> 权限。
                 </p>
-                <p className="mt-2 text-xs text-gray-400">
+                <p className="mt-2 text-xs text-[var(--text-muted)]">
                   路径: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → New personal access token (classic)
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm text-gray-400 mb-2">
+                <label className="block text-sm text-[var(--text-secondary)] mb-2">
                   GitHub Token <span className="text-red-400">*</span>
                 </label>
                 <div className="flex gap-2">
@@ -261,7 +261,7 @@ export function GistSync() {
                     value={token}
                     onChange={(e) => setToken(e.target.value)}
                     onBlur={handleTokenBlur}
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-gray-600"
+                    className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
                     placeholder="ghp_xxxxxxxxxxxx"
                   />
                   {token && (
@@ -271,7 +271,7 @@ export function GistSync() {
                         navigator.clipboard.writeText(token)
                         showMessage('success', 'Token 已复制')
                       }}
-                      className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                      className="px-3 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all"
                     >
                       复制
                     </button>
@@ -280,14 +280,14 @@ export function GistSync() {
               </div>
 
               <div>
-                <label className="block text-sm text-gray-400 mb-2">
+                <label className="block text-sm text-[var(--text-secondary)] mb-2">
                   选择云端数据
                 </label>
                 <div className="relative">
                   <select
                     value={gistId}
                     onChange={(e) => setGistId(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all appearance-none text-gray-300"
+                    className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all appearance-none text-[var(--text-secondary)]"
                   >
                     <option value="">创建新存储</option>
                     {gistList.map((gist) => (
@@ -296,33 +296,33 @@ export function GistSync() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
                 </div>
                 {loadingGists && (
-                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-[var(--text-muted)] mt-1 flex items-center gap-1">
                     <RefreshCw className="w-3 h-3 animate-spin" />
                     加载中...
                   </p>
                 )}
                 {!loadingGists && gistList.length === 0 && token && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
                     未找到已有数据，推送时将创建新存储
                   </p>
                 )}
                 {/* Gist 列表管理 */}
                 {gistList.length > 0 && (
                   <div className="mt-3 space-y-2">
-                    <p className="text-xs text-gray-500">已有云端存储（删除请前往 gist.github.com）：</p>
+                    <p className="text-xs text-[var(--text-muted)]">已有云端存储（删除请前往 gist.github.com）：</p>
                     {gistList.map((gist) => (
                       <div
                         key={gist.id}
                         className={`flex items-center justify-between p-2 rounded-lg ${
-                          gist.id === gistId ? 'bg-violet-500/10 border border-violet-500/30' : 'bg-white/5'
+                          gist.id === gistId ? 'bg-violet-500/10 border border-violet-500/30' : 'bg-[var(--input-bg)]'
                         }`}
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-300 truncate">{gist.id}</p>
-                          <p className="text-xs text-gray-500">{formatDate(gist.updatedAt)}</p>
+                          <p className="text-xs text-[var(--text-secondary)] truncate">{gist.id}</p>
+                          <p className="text-xs text-[var(--text-muted)]">{formatDate(gist.updatedAt)}</p>
                         </div>
                         <button
                           type="button"
@@ -330,7 +330,7 @@ export function GistSync() {
                             navigator.clipboard.writeText(gist.id)
                             showMessage('success', 'ID 已复制')
                           }}
-                          className="p-1.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors text-xs ml-2"
+                          className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors text-xs ml-2"
                         >
                           复制
                         </button>
@@ -352,14 +352,14 @@ export function GistSync() {
               )}
               <button
                 onClick={() => setShowSettings(false)}
-                className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl font-medium text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+                className="flex-1 py-3 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-all"
               >
                 取消
               </button>
               <button
                 onClick={handleSaveConfig}
                 disabled={saving}
-                className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl font-medium hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50"
+                className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl font-medium hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50 text-white"
               >
                 {saving ? '验证中...' : '保存'}
               </button>
