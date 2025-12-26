@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { getFaviconUrl } from '../utils/favicon'
-import { Globe } from 'lucide-react'
 
 interface Props {
   url: string
