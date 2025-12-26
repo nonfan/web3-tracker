@@ -186,6 +186,21 @@ export function GistSync() {
   const handlePush = async () => {
     setPushing(true)
     const data = exportData()
+    
+    // 检查是否为空数据
+    try {
+      const parsed = JSON.parse(data)
+      if (!parsed.projects || parsed.projects.length === 0) {
+        showMessage('error', '本地没有数据，无法推送空数据覆盖云端')
+        setPushing(false)
+        return
+      }
+    } catch {
+      showMessage('error', '数据格式错误')
+      setPushing(false)
+      return
+    }
+    
     const result = await syncToGist(data)
     if (result.success) {
       const config = getGistConfig()
