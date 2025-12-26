@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Check } from 'lucide-react'
+import gsap from 'gsap'
 
 interface Option {
   value: string
@@ -16,6 +17,7 @@ interface Props {
 export function Dropdown({ value, options, onChange, icon }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const selectedOption = options.find(o => o.value === value)
 
@@ -29,6 +31,15 @@ export function Dropdown({ value, options, onChange, icon }: Props) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (isOpen && menuRef.current) {
+      gsap.fromTo(menuRef.current,
+        { opacity: 0, y: -8, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.2, ease: 'power2.out' }
+      )
+    }
+  }, [isOpen])
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -41,7 +52,10 @@ export function Dropdown({ value, options, onChange, icon }: Props) {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 min-w-full bg-[var(--card-bg)] border border-[var(--border)] rounded-xl shadow-xl overflow-hidden z-50">
+        <div 
+          ref={menuRef}
+          className="absolute top-full left-0 mt-1 min-w-full bg-[var(--card-bg)] border border-[var(--border)] rounded-xl shadow-xl overflow-hidden z-50"
+        >
           {options.map((option) => (
             <button
               key={option.value}

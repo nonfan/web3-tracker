@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Project, ProjectStatus, Priority } from '../types'
 import { PRESET_TAGS } from '../utils/tagAnalyzer'
 import { DatePicker } from './DatePicker'
-import { X, Plus, Globe, MessageCircle, Flag } from 'lucide-react'
+import { X, Plus, Globe, MessageCircle, Flag, DollarSign, TrendingUp } from 'lucide-react'
+import gsap from 'gsap'
 
 interface Props {
   project?: Project
@@ -16,6 +17,8 @@ interface Props {
     priority: Priority
     tags: string[]
     deadline?: number
+    investment?: number
+    profit?: number
     notes: string
   }) => void
   onCancel: () => void
@@ -46,8 +49,26 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
   const [priority, setPriority] = useState<Priority>('medium')
   const [tags, setTags] = useState<string[]>([])
   const [deadline, setDeadline] = useState('')
+  const [investment, setInvestment] = useState('')
+  const [profit, setProfit] = useState('')
   const [notes, setNotes] = useState('')
   const [newTag, setNewTag] = useState('')
+  
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+
+  useEffect(() => {
+    if (overlayRef.current && formRef.current) {
+      gsap.fromTo(overlayRef.current,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.2 }
+      )
+      gsap.fromTo(formRef.current,
+        { opacity: 0, scale: 0.9, y: -20 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.25, ease: 'back.out(1.5)' }
+      )
+    }
+  }, [])
 
   useEffect(() => {
     if (project) {
@@ -60,6 +81,8 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
       setPriority(project.priority || 'medium')
       setTags(project.tags || [])
       setDeadline(project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : '')
+      setInvestment(project.investment?.toString() || '')
+      setProfit(project.profit?.toString() || '')
       setNotes(project.notes)
     }
   }, [project])
@@ -85,21 +108,27 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
       priority,
       tags,
       deadline: deadline ? new Date(deadline).getTime() : undefined,
+      investment: investment ? parseFloat(investment) : undefined,
+      profit: profit ? parseFloat(profit) : undefined,
       notes 
     })
   }
 
   return (
     <div 
+      ref={overlayRef}
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel()
       }}
+      style={{ opacity: 0 }}
     >
       <form
+        ref={formRef}
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
         className="bg-[var(--card-bg)] rounded-2xl p-5 w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-[var(--border-hover)] shadow-2xl"
+        style={{ opacity: 0 }}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">
@@ -251,7 +280,38 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
             </div>
           </div>
 
-          {/* 第四行：标签 */}
+          {/* 第四行：投入 + 收益 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-[var(--text-secondary)] mb-1 flex items-center gap-1">
+                <DollarSign className="w-3 h-3 shrink-0" /> 投入 (USD)
+              </label>
+              <input
+                type="number"
+                value={investment}
+                onChange={(e) => setInvestment(e.target.value)}
+                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[var(--text-secondary)] mb-1 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3 shrink-0" /> 收益 (USD)
+              </label>
+              <input
+                type="number"
+                value={profit}
+                onChange={(e) => setProfit(e.target.value)}
+                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+                placeholder="0.00"
+                step="0.01"
+              />
+            </div>
+          </div>
+
+          {/* 第五行：标签 */}
           <div>
             <label className="block text-xs text-[var(--text-secondary)] mb-1">标签</label>
             <div className="flex gap-2 mb-2">
@@ -311,7 +371,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
             </div>
           </div>
 
-          {/* 第五行：备注 */}
+          {/* 第六行：备注 */}
           <div>
             <label className="block text-xs text-[var(--text-secondary)] mb-1">备注</label>
             <textarea

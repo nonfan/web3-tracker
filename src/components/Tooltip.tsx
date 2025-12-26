@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import gsap from 'gsap'
 
 interface Props {
   content: string
@@ -8,29 +9,41 @@ interface Props {
 
 export function Tooltip({ content, children, position = 'bottom' }: Props) {
   const [show, setShow] = useState(false)
-  const [coords, setCoords] = useState({ x: 0, y: 0 })
   const triggerRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (show && triggerRef.current && tooltipRef.current) {
-      const triggerRect = triggerRef.current.getBoundingClientRect()
-      const tooltipRect = tooltipRef.current.getBoundingClientRect()
-      
-      let x = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2
-      let y = position === 'top' 
-        ? triggerRect.top - tooltipRect.height - 8
-        : triggerRect.bottom + 8
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current || !tooltipRef.current) return
 
-      // 防止超出屏幕
-      if (x < 8) x = 8
-      if (x + tooltipRect.width > window.innerWidth - 8) {
-        x = window.innerWidth - tooltipRect.width - 8
-      }
+    const triggerRect = triggerRef.current.getBoundingClientRect()
+    const tooltipRect = tooltipRef.current.getBoundingClientRect()
+    
+    let x = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2
+    let y = position === 'top' 
+      ? triggerRect.top - tooltipRect.height - 8
+      : triggerRect.bottom + 8
 
-      setCoords({ x, y })
+    // 防止超出屏幕
+    if (x < 8) x = 8
+    if (x + tooltipRect.width > window.innerWidth - 8) {
+      x = window.innerWidth - tooltipRect.width - 8
     }
-  }, [show, position])
+
+    return { x, y }
+  }, [position])
+
+  useEffect(() => {
+    if (show && tooltipRef.current) {
+      const coords = updatePosition()
+      if (coords) {
+        gsap.set(tooltipRef.current, { left: coords.x, top: coords.y })
+        gsap.fromTo(tooltipRef.current,
+          { opacity: 0, y: position === 'top' ? 4 : -4 },
+          { opacity: 1, y: 0, duration: 0.15, ease: 'power2.out' }
+        )
+      }
+    }
+  }, [show, position, updatePosition])
 
   return (
     <div
@@ -43,8 +56,8 @@ export function Tooltip({ content, children, position = 'bottom' }: Props) {
       {show && (
         <div
           ref={tooltipRef}
-          className="fixed z-[100] px-2.5 py-1.5 text-xs font-medium bg-[var(--card-bg)] text-[var(--text-primary)] rounded-lg border border-[var(--border)] shadow-lg animate-in fade-in duration-150"
-          style={{ left: coords.x, top: coords.y }}
+          className="fixed z-[100] px-3 py-2 text-xs font-medium bg-[var(--card-bg)] text-[var(--text-primary)] rounded-lg border border-[var(--border)] shadow-lg max-w-xs"
+          style={{ opacity: 0 }}
         >
           {content}
           <div 

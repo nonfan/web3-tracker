@@ -10,8 +10,9 @@ import { BatchActions } from './components/BatchActions'
 import { ThemeToggle } from './components/ThemeToggle'
 import { Tooltip } from './components/Tooltip'
 import { Dropdown } from './components/Dropdown'
+import { LogoWithText } from './components/LogoWithText'
 import type { Project, ProjectStatus, Priority } from './types'
-import { Target, Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc } from 'lucide-react'
+import { Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc } from 'lucide-react'
 
 type FilterStatus = ProjectStatus | 'all'
 type SortBy = 'updated' | 'priority' | 'deadline' | 'name'
@@ -102,28 +103,19 @@ function App() {
     <div className={`min-h-screen transition-colors ${theme === 'dark' ? 'bg-gradient-to-br from-[#0a0a0f] via-[#0f0f18] to-[#0a0a0f]' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'}`}>
       <div className="p-4 md:p-6 max-w-7xl mx-auto">
         {/* Header */}
-        <header className="bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-4 mb-6 shadow-sm">
+        <header className="bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-4 mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Logo & Title */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/25">
-                <Target className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  Web3 Tracker
-                </h1>
-                <p className="text-[var(--text-muted)] text-xs">撸毛项目追踪管理</p>
-              </div>
-            </div>
+            <LogoWithText />
             
             {/* Actions */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* 工具按钮组 */}
-              <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-xl">
+              <div className="flex items-center gap-1 bg-[var(--input-bg)] border border-[var(--border)] p-1 rounded-xl">
                 <ThemeToggle />
                 <div className="w-px h-5 bg-[var(--border)]" />
                 <GistSync />
+                <div className="w-px h-5 bg-[var(--border)]" />
                 <DataSync />
               </div>
               
@@ -158,19 +150,25 @@ function App() {
             </div>
           </div>
         </header>        {/* Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-4 gap-3 mb-6">
           {[
-            { label: '总项目', value: stats.total, gradient: 'from-gray-600 to-gray-700', shadow: 'shadow-gray-500/10' },
-            { label: '进行中', value: stats.active, gradient: 'from-emerald-600 to-green-600', shadow: 'shadow-emerald-500/20' },
-            { label: '已完成', value: stats.completed, gradient: 'from-blue-600 to-cyan-600', shadow: 'shadow-blue-500/20' },
-            { label: '已发币', value: stats.launched, gradient: 'from-violet-600 to-purple-600', shadow: 'shadow-violet-500/20' },
+            { label: '总项目', value: stats.total, color: 'slate', bgColor: 'bg-slate-500/10', borderColor: 'border-slate-500/20' },
+            { label: '进行中', value: stats.active, color: 'emerald', bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/20' },
+            { label: '已完成', value: stats.completed, color: 'blue', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/20' },
+            { label: '已发币', value: stats.launched, color: 'violet', bgColor: 'bg-violet-500/10', borderColor: 'border-violet-500/20' },
           ].map((stat) => (
             <div
               key={stat.label}
-              className={`bg-gradient-to-br ${stat.gradient} rounded-2xl p-4 text-center shadow-lg ${stat.shadow} border border-white/5`}
+              className={`${stat.bgColor} border ${stat.borderColor} rounded-xl p-4 transition-all hover:scale-[1.02]`}
             >
-              <div className="text-3xl font-bold text-white">{stat.value}</div>
-              <div className="text-sm text-white/70">{stat.label}</div>
+              <div className="text-xs text-[var(--text-muted)] font-medium mb-1">{stat.label}</div>
+              <div className={`text-3xl font-bold ${
+                stat.color === 'slate' ? 'text-[var(--text-primary)]' :
+                stat.color === 'emerald' ? 'text-emerald-400' :
+                stat.color === 'blue' ? 'text-blue-400' : 'text-violet-400'
+              }`}>
+                {stat.value}
+              </div>
             </div>
           ))}
         </div>

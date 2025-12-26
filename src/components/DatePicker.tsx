@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import gsap from 'gsap'
 
 interface Props {
   value: string
@@ -17,16 +19,37 @@ export function DatePicker({ value, onChange, placeholder = '选择日期' }: Pr
     return new Date()
   })
   const ref = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  const updatePosition = useCallback(() => {
+    if (!buttonRef.current || !ref.current) return
+    const rect = buttonRef.current.getBoundingClientRect()
+    gsap.set(ref.current, {
+      top: rect.bottom + 4,
+      left: rect.left
+    })
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (ref.current && !ref.current.contains(e.target as Node) && 
+          buttonRef.current && !buttonRef.current.contains(e.target as Node)) {
         setIsOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    if (isOpen && ref.current && buttonRef.current) {
+      updatePosition()
+      gsap.fromTo(ref.current,
+        { opacity: 0, y: -8, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.2, ease: 'power2.out' }
+      )
+    }
+  }, [isOpen, updatePosition])
 
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
@@ -82,8 +105,9 @@ export function DatePicker({ value, onChange, placeholder = '选择日期' }: Pr
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1))
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full h-[34px] bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all text-left flex items-center gap-2 text-sm"
@@ -106,8 +130,12 @@ export function DatePicker({ value, onChange, placeholder = '选择日期' }: Pr
         )}
       </button>
 
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl shadow-xl z-50 p-3 w-72">
+      {isOpen && createPortal(
+        <div 
+          ref={ref}
+          className="fixed bg-[var(--card-bg)] border border-[var(--border)] rounded-xl shadow-2xl z-[100] p-3 w-72"
+          style={{ opacity: 0 }}
+        >
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <button
@@ -185,7 +213,8 @@ export function DatePicker({ value, onChange, placeholder = '选择日期' }: Pr
               今天
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

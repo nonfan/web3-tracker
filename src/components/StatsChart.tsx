@@ -54,75 +54,77 @@ export function StatsChart({ projects }: Props) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
       {/* 任务完成率 */}
-      <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--border)]">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+      <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--border)] hover:border-[var(--border-hover)] transition-all">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-9 h-9 bg-emerald-500/15 rounded-lg flex items-center justify-center">
+            <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400" />
           </div>
-          <span className="text-sm text-[var(--text-secondary)]">任务完成率</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-[var(--text-muted)] mb-0.5">任务完成率</div>
+            <div className="text-lg font-bold text-emerald-400">{stats.completionRate}%</div>
+          </div>
         </div>
-        <div className="flex items-end gap-2">
-          <span className="text-2xl font-bold text-emerald-400">{stats.completionRate}%</span>
-          <span className="text-xs text-[var(--text-muted)] mb-1">
-            {stats.completedTasks}/{stats.totalTasks}
-          </span>
-        </div>
-        <div className="mt-2 h-1.5 bg-[var(--input-bg)] rounded-full overflow-hidden">
+        <div className="h-1.5 bg-emerald-500/10 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-emerald-500 to-green-500"
+            className="h-full bg-emerald-500 transition-all duration-500"
             style={{ width: `${stats.completionRate}%` }}
           />
+        </div>
+        <div className="text-xs text-[var(--text-muted)] mt-2">
+          {stats.completedTasks} / {stats.totalTasks} 任务
         </div>
       </div>
 
       {/* 高优先级 */}
-      <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--border)]">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center">
-            <AlertTriangle className="w-4 h-4 text-red-400" />
+      <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--border)] hover:border-[var(--border-hover)] transition-all">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-9 h-9 bg-red-500/15 rounded-lg flex items-center justify-center">
+            <AlertTriangle className="w-4.5 h-4.5 text-red-400" />
           </div>
-          <span className="text-sm text-[var(--text-secondary)]">高优先级</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-[var(--text-muted)] mb-0.5">高优先级</div>
+            <div className="text-lg font-bold text-red-400">{stats.highPriorityActive.length}</div>
+          </div>
         </div>
-        <div className="text-2xl font-bold text-red-400">
-          {stats.highPriorityActive.length}
-        </div>
-        <div className="text-xs text-[var(--text-muted)] mt-1">需要关注的项目</div>
+        <div className="text-xs text-[var(--text-muted)]">需要优先关注</div>
       </div>
 
       {/* 即将到期 */}
-      <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--border)]">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center">
-            <Clock className="w-4 h-4 text-amber-400" />
+      <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--border)] hover:border-[var(--border-hover)] transition-all">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-9 h-9 bg-amber-500/15 rounded-lg flex items-center justify-center">
+            <Clock className="w-4.5 h-4.5 text-amber-400" />
           </div>
-          <span className="text-sm text-[var(--text-secondary)]">即将到期</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-[var(--text-muted)] mb-0.5">即将到期</div>
+            <div className="text-lg font-bold text-amber-400">{stats.upcomingDeadlines.length}</div>
+          </div>
         </div>
-        <div className="text-2xl font-bold text-amber-400">
-          {stats.upcomingDeadlines.length}
-        </div>
-        <div className="text-xs text-[var(--text-muted)] mt-1">7天内截止</div>
+        <div className="text-xs text-[var(--text-muted)]">7 天内截止</div>
       </div>
 
       {/* 热门标签 */}
-      <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--border)]">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-violet-400" />
+      <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--border)] hover:border-[var(--border-hover)] transition-all">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-9 h-9 bg-violet-500/15 rounded-lg flex items-center justify-center">
+            <TrendingUp className="w-4.5 h-4.5 text-violet-400" />
           </div>
-          <span className="text-sm text-[var(--text-secondary)]">热门标签</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-[var(--text-muted)]">热门标签</div>
+          </div>
         </div>
         <div className="flex flex-wrap gap-1">
           {stats.topTags.length > 0 ? (
-            stats.topTags.map(([tag, count]) => (
+            stats.topTags.slice(0, 3).map(([tag]) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 bg-violet-500/10 text-violet-400 rounded text-xs"
+                className="px-2 py-0.5 bg-violet-500/15 text-violet-400 rounded text-xs font-medium"
               >
-                {tag} ({count})
+                {tag}
               </span>
             ))
           ) : (
-            <span className="text-xs text-[var(--text-muted)]">暂无数据</span>
+            <span className="text-xs text-[var(--text-muted)]">暂无标签</span>
           )}
         </div>
       </div>

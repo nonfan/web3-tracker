@@ -21,6 +21,8 @@ export interface Project {
   tags: string[]
   notes: string
   deadline?: number  // 截止日期时间戳
+  investment?: number  // 投入金额 (USD)
+  profit?: number  // 收益金额 (USD)
   createdAt: number
   updatedAt: number
 }

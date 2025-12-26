@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store/useStore'
 import {
   getGistConfig,
@@ -12,6 +12,97 @@ import {
 } from '../utils/gistSync'
 import { Tooltip } from './Tooltip'
 import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown } from 'lucide-react'
+import gsap from 'gsap'
+
+interface GistDropdownProps {
+  value: string
+  options: GistInfo[]
+  onChange: (value: string) => void
+  formatDate: (date: string) => string
+}
+
+function GistDropdown({ value, options, onChange, formatDate }: GistDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    if (isOpen && menuRef.current) {
+      gsap.fromTo(menuRef.current,
+        { opacity: 0, y: -8, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.2, ease: 'power2.out' }
+      )
+    }
+  }, [isOpen])
+
+  const selectedOption = options.find(o => o.id === value)
+  const displayText = selectedOption 
+    ? `${selectedOption.id.slice(0, 8)}... (更新于 ${formatDate(selectedOption.updatedAt)})`
+    : '创建新存储'
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all text-left flex items-center justify-between text-[var(--text-secondary)]"
+      >
+        <span className="truncate">{displayText}</span>
+        <ChevronDown className={`w-4 h-4 text-[var(--text-muted)] transition-transform shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div 
+          ref={menuRef}
+          className="absolute top-full left-0 right-0 mt-1 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl shadow-xl overflow-hidden z-50 max-h-60 overflow-y-auto"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              onChange('')
+              setIsOpen(false)
+            }}
+            className={`w-full px-4 py-3 text-sm text-left transition-colors ${
+              !value
+                ? 'bg-violet-500/10 text-violet-400'
+                : 'text-[var(--text-secondary)] hover:bg-[var(--input-bg)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            创建新存储
+          </button>
+          {options.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => {
+                onChange(option.id)
+                setIsOpen(false)
+              }}
+              className={`w-full px-4 py-3 text-sm text-left transition-colors ${
+                option.id === value
+                  ? 'bg-violet-500/10 text-violet-400'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--input-bg)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <div className="truncate">{option.id.slice(0, 8)}...</div>
+              <div className="text-xs text-[var(--text-muted)]">更新于 {formatDate(option.updatedAt)}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function GistSync() {
   const { exportData, importData } = useStore()
@@ -283,21 +374,12 @@ export function GistSync() {
                 <label className="block text-sm text-[var(--text-secondary)] mb-2">
                   选择云端数据
                 </label>
-                <div className="relative">
-                  <select
-                    value={gistId}
-                    onChange={(e) => setGistId(e.target.value)}
-                    className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all appearance-none text-[var(--text-secondary)]"
-                  >
-                    <option value="">创建新存储</option>
-                    {gistList.map((gist) => (
-                      <option key={gist.id} value={gist.id}>
-                        {gist.id.slice(0, 8)}... (更新于 {formatDate(gist.updatedAt)})
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
-                </div>
+                <GistDropdown
+                  value={gistId}
+                  options={gistList}
+                  onChange={setGistId}
+                  formatDate={formatDate}
+                />
                 {loadingGists && (
                   <p className="text-xs text-[var(--text-muted)] mt-1 flex items-center gap-1">
                     <RefreshCw className="w-3 h-3 animate-spin" />

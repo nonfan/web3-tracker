@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { Project } from '../types'
 import { useStore } from '../store/useStore'
-import { useTheme } from '../store/useTheme'
-import { Pencil, Trash2, Globe, MessageCircle, Plus, X, Check, Clock, Flag } from 'lucide-react'
+import { Pencil, Trash2, Globe, MessageCircle, Plus, X, Check, Clock, Flag, DollarSign, TrendingUp } from 'lucide-react'
+import { ConfirmDialog } from './ConfirmDialog'
+import { Favicon } from './Favicon'
+import { Tooltip } from './Tooltip'
+import { createPortal } from 'react-dom'
+import gsap from 'gsap'
 
 const statusConfig = {
   active: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', dot: 'bg-emerald-400', label: '进行中' },
@@ -40,8 +44,15 @@ function formatDeadline(timestamp: number): { text: string; urgent: boolean } {
 
 export function ProjectCard({ project, onEdit, selected, onSelect, selectionMode }: Props) {
   const [newTask, setNewTask] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showProfitInput, setShowProfitInput] = useState(false)
+  const [profitValue, setProfitValue] = useState('')
+  const [investmentValue, setInvestmentValue] = useState('')
   const { addTask, toggleTask, deleteTask, deleteProject, updateProject } = useStore()
-  const { theme } = useTheme()
+  
+  const profitButtonRef = useRef<HTMLButtonElement>(null)
+  const profitPopupRef = useRef<HTMLDivElement>(null)
+  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 })
 
   const completedTasks = project.tasks.filter((t) => t.completed).length
   const totalTasks = project.tasks.length
@@ -57,6 +68,56 @@ export function ProjectCard({ project, onEdit, selected, onSelect, selectionMode
     }
   }
 
+  const handleOpenProfitInput = () => {
+    if (showProfitInput) {
+      setShowProfitInput(false)
+      return
+    }
+    setProfitValue(project.profit?.toString() || '')
+    setInvestmentValue(project.investment?.toString() || '')
+    
+    // 计算弹窗位置
+    if (profitButtonRef.current) {
+      const rect = profitButtonRef.current.getBoundingClientRect()
+      setPopupPosition({
+        top: rect.bottom + 8,
+        left: rect.left - 100 // 居中偏移
+      })
+    }
+    setShowProfitInput(true)
+  }
+
+  // 点击外部关闭
+  useEffect(() => {
+    if (!showProfitInput) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profitPopupRef.current && !profitPopupRef.current.contains(e.target as Node) &&
+          profitButtonRef.current && !profitButtonRef.current.contains(e.target as Node)) {
+        setShowProfitInput(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showProfitInput])
+
+  // 弹窗动画
+  useEffect(() => {
+    if (showProfitInput && profitPopupRef.current) {
+      gsap.fromTo(profitPopupRef.current,
+        { opacity: 0, y: -8, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.2, ease: 'power2.out' }
+      )
+    }
+  }, [showProfitInput])
+
+  const handleSaveProfit = () => {
+    updateProject(project.id, {
+      investment: investmentValue ? parseFloat(investmentValue) : undefined,
+      profit: profitValue ? parseFloat(profitValue) : undefined
+    })
+    setShowProfitInput(false)
+  }
+
   return (
     <div 
       className={`bg-[var(--card-bg)] rounded-2xl p-5 border transition-all group ${
@@ -65,7 +126,12 @@ export function ProjectCard({ project, onEdit, selected, onSelect, selectionMode
       onClick={() => selectionMode && onSelect?.(project.id)}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start gap-3 mb-3">
+        {/* Favicon */}
+        {project.website && (
+          <Favicon url={project.website} name={project.name} size={36} />
+        )}
+        
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             {selectionMode && (
@@ -93,11 +159,28 @@ export function ProjectCard({ project, onEdit, selected, onSelect, selectionMode
             )}
           </div>
           {project.description && (
-            <p className="text-sm text-[var(--text-secondary)] line-clamp-1">{project.description}</p>
+            <Tooltip content={project.description}>
+              <p className="text-sm text-[var(--text-secondary)] line-clamp-1 cursor-default">
+                {project.description}
+              </p>
+            </Tooltip>
           )}
         </div>
         {!selectionMode && (
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Tooltip content="记录收益">
+              <button
+                ref={profitButtonRef}
+                onClick={handleOpenProfitInput}
+                className={`p-2 rounded-lg transition-colors ${
+                  showProfitInput 
+                    ? 'bg-emerald-500/20 text-emerald-400' 
+                    : 'hover:bg-emerald-500/10 text-[var(--text-muted)] hover:text-emerald-400'
+                }`}
+              >
+                <DollarSign className="w-4 h-4" />
+              </button>
+            </Tooltip>
             <button
               onClick={onEdit}
               className="p-2 hover:bg-[var(--input-bg)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
@@ -105,9 +188,7 @@ export function ProjectCard({ project, onEdit, selected, onSelect, selectionMode
               <Pencil className="w-4 h-4" />
             </button>
             <button
-              onClick={() => {
-                if (confirm('确定删除这个项目？')) deleteProject(project.id)
-              }}
+              onClick={() => setShowDeleteConfirm(true)}
               className="p-2 hover:bg-red-500/10 rounded-lg text-[var(--text-muted)] hover:text-red-400 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
@@ -116,12 +197,95 @@ export function ProjectCard({ project, onEdit, selected, onSelect, selectionMode
         )}
       </div>
 
-      {/* Deadline */}
-      {deadline && (
-        <div className={`flex items-center gap-1.5 mb-3 text-xs ${deadline.urgent ? 'text-amber-400' : 'text-[var(--text-muted)]'}`}>
-          <Clock className="w-3.5 h-3.5" />
-          <span>截止: {deadline.text}</span>
-        </div>
+      {/* Deadline & Investment/Profit */}
+      <div className="flex flex-wrap items-center gap-2 mb-3 text-xs">
+        {deadline && (
+          <div className={`flex items-center gap-1.5 ${deadline.urgent ? 'text-amber-400' : 'text-[var(--text-muted)]'}`}>
+            <Clock className="w-3.5 h-3.5" />
+            <span>截止: {deadline.text}</span>
+          </div>
+        )}
+        {(project.investment !== undefined && project.investment > 0) ? (
+          <div className="flex items-center gap-1 text-[var(--text-muted)]">
+            <DollarSign className="w-3.5 h-3.5" />
+            <span>投入: ${project.investment.toLocaleString()}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 text-[var(--text-muted)] opacity-50">
+            <DollarSign className="w-3.5 h-3.5" />
+            <span>投入: --</span>
+          </div>
+        )}
+        {project.profit !== undefined ? (
+          <div className={`flex items-center gap-1 ${project.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>收益: {project.profit >= 0 ? '+' : ''}${project.profit.toLocaleString()}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 text-[var(--text-muted)] opacity-50">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>收益: --</span>
+          </div>
+        )}
+      </div>
+
+      {/* 收益输入弹窗 - Portal */}
+      {showProfitInput && createPortal(
+        <div 
+          ref={profitPopupRef}
+          className="fixed z-[100] p-3 bg-[var(--card-bg)] rounded-xl border border-[var(--border)] shadow-2xl w-64"
+          style={{ top: popupPosition.top, left: popupPosition.left, opacity: 0 }}
+        >
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div>
+              <label className="block text-xs text-[var(--text-muted)] mb-1">投入 (USD)</label>
+              <input
+                type="number"
+                value={investmentValue}
+                onChange={(e) => setInvestmentValue(e.target.value)}
+                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-violet-500/50 text-[var(--text-primary)]"
+                placeholder="0"
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[var(--text-muted)] mb-1">收益 (USD)</label>
+              <input
+                type="number"
+                value={profitValue}
+                onChange={(e) => setProfitValue(e.target.value)}
+                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-violet-500/50 text-[var(--text-primary)]"
+                placeholder="0"
+                step="0.01"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                updateProject(project.id, { investment: undefined, profit: undefined })
+                setShowProfitInput(false)
+              }}
+              className="py-1.5 px-2 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            >
+              清空
+            </button>
+            <button
+              onClick={() => setShowProfitInput(false)}
+              className="flex-1 py-1.5 text-xs bg-[var(--input-bg)] border border-[var(--border)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              取消
+            </button>
+            <button
+              onClick={handleSaveProfit}
+              className="flex-1 py-1.5 text-xs bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+            >
+              保存
+            </button>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Tags */}
@@ -256,6 +420,19 @@ export function ProjectCard({ project, onEdit, selected, onSelect, selectionMode
           )
         })}
       </div>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="删除项目"
+        message={`确定要删除「${project.name}」吗？此操作无法撤销。`}
+        confirmText="删除"
+        cancelText="取消"
+        onConfirm={() => {
+          deleteProject(project.id)
+          setShowDeleteConfirm(false)
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   )
 }
