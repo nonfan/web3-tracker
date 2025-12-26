@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store/useStore'
+import type { Project } from '../types'
 import {
   getGistConfig,
   saveGistConfig,
@@ -8,10 +9,12 @@ import {
   findAllGists,
   syncToGist,
   pullFromGist,
+  forcePushToGist,
   type GistInfo,
+  type DiffResult,
 } from '../utils/gistSync'
 import { Tooltip } from './Tooltip'
-import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown } from 'lucide-react'
+import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown, AlertTriangle } from 'lucide-react'
 import gsap from 'gsap'
 
 interface GistDropdownProps {
@@ -108,6 +111,9 @@ export function GistSync() {
   const { exportData, importData } = useStore()
   const [isConfigured, setIsConfigured] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showConflict, setShowConflict] = useState(false)
+  const [conflictDiff, setConflictDiff] = useState<DiffResult | null>(null)
+  const [remoteData, setRemoteData] = useState<string | null>(null)
   const [token, setToken] = useState('')
   const [gistId, setGistId] = useState('')
   const [gistList, setGistList] = useState<GistInfo[]>([])
@@ -210,8 +216,12 @@ export function GistSync() {
       } else {
         showMessage('success', '已同步到云端')
       }
+    } else if (result.conflict && result.diff) {
+      // 有冲突，显示冲突处理弹窗
+      setConflictDiff(result.diff)
+      setRemoteData(result.remoteData || null)
+      setShowConflict(true)
     } else if (result.needSelect) {
-      // 需要先选择 Gist
       showMessage('error', result.error || '请先选择云端存储')
       setShowSettings(true)
       await loadGistList(token)
@@ -220,6 +230,37 @@ export function GistSync() {
     }
     setPushing(false)
   }
+
+  // 强制用本地覆盖云端
+  const handleForceLocal = async () => {
+    setPushing(true)
+    const data = exportData()
+    const result = await forcePushToGist(data)
+    if (result.success) {
+      showMessage('success', '已用本地数据覆盖云端')
+    } else {
+      showMessage('error', result.error || '推送失败')
+    }
+    setShowConflict(false)
+    setConflictDiff(null)
+    setPushing(false)
+  }
+
+  // 用云端覆盖本地
+  const handleForceRemote = () => {
+    if (remoteData) {
+      const imported = importData(remoteData)
+      if (imported) {
+        showMessage('success', '已用云端数据覆盖本地')
+      } else {
+        showMessage('error', '导入失败')
+      }
+    }
+    setShowConflict(false)
+    setConflictDiff(null)
+  }
+
+  const formatProjectName = (p: Project) => p.name
 
   const handlePull = async () => {
     setPulling(true)
@@ -459,6 +500,130 @@ export function GistSync() {
                 className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl font-medium hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50 text-white"
               >
                 {saving ? '验证中...' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Conflict Modal */}
+      {showConflict && conflictDiff && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-lg border border-[var(--border-hover)] shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2 text-amber-400">
+                <AlertTriangle className="w-5 h-5" />
+                检测到数据冲突
+              </h2>
+              <button
+                onClick={() => {
+                  setShowConflict(false)
+                  setConflictDiff(null)
+                }}
+                className="p-2 hover:bg-[var(--input-bg)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+              <p className="text-sm text-[var(--text-secondary)]">
+                本地数据与云端数据不一致，请选择保留哪边的数据：
+              </p>
+
+              {/* 云端独有 */}
+              {conflictDiff.remoteOnly.length > 0 && (
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <p className="text-sm font-medium text-blue-400 mb-2">
+                    云端有、本地没有 ({conflictDiff.remoteOnly.length})
+                  </p>
+                  <div className="space-y-1">
+                    {conflictDiff.remoteOnly.map(p => (
+                      <div key={p.id} className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-400" />
+                        {formatProjectName(p)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 本地独有 */}
+              {conflictDiff.localOnly.length > 0 && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                  <p className="text-sm font-medium text-emerald-400 mb-2">
+                    本地有、云端没有 ({conflictDiff.localOnly.length})
+                  </p>
+                  <div className="space-y-1">
+                    {conflictDiff.localOnly.map(p => (
+                      <div key={p.id} className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                        {formatProjectName(p)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 两边都改了 */}
+              {conflictDiff.modified.length > 0 && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                  <p className="text-sm font-medium text-amber-400 mb-2">
+                    两边都有修改 ({conflictDiff.modified.length})
+                  </p>
+                  <div className="space-y-2">
+                    {conflictDiff.modified.map(({ local, remote }) => (
+                      <div key={local.id} className="text-xs bg-[var(--input-bg)] rounded-lg p-2">
+                        <div className="font-medium text-[var(--text-primary)] mb-1">{formatProjectName(local)}</div>
+                        <div className="grid grid-cols-2 gap-2 text-[var(--text-muted)]">
+                          <div>
+                            <span className="text-emerald-400">本地:</span> {new Date(local.updatedAt).toLocaleString('zh-CN')}
+                          </div>
+                          <div>
+                            <span className="text-blue-400">云端:</span> {new Date(remote.updatedAt).toLocaleString('zh-CN')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 未变化 */}
+              {conflictDiff.unchanged.length > 0 && (
+                <div className="p-3 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl">
+                  <p className="text-sm font-medium text-[var(--text-muted)] mb-1">
+                    未变化 ({conflictDiff.unchanged.length})
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    {conflictDiff.unchanged.map(p => formatProjectName(p)).join('、')}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-[var(--border)]">
+              <button
+                onClick={() => {
+                  setShowConflict(false)
+                  setConflictDiff(null)
+                }}
+                className="flex-1 py-3 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-all"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleForceRemote}
+                className="flex-1 py-3 bg-blue-500/20 border border-blue-500/30 rounded-xl font-medium text-blue-400 hover:bg-blue-500/30 transition-all"
+              >
+                用云端覆盖本地
+              </button>
+              <button
+                onClick={handleForceLocal}
+                disabled={pushing}
+                className="flex-1 py-3 bg-emerald-500/20 border border-emerald-500/30 rounded-xl font-medium text-emerald-400 hover:bg-emerald-500/30 transition-all disabled:opacity-50"
+              >
+                {pushing ? '推送中...' : '用本地覆盖云端'}
               </button>
             </div>
           </div>
