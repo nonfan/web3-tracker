@@ -162,7 +162,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
       onClick={() => selectionMode && onSelect?.(project.id)}
     >
       {/* Header */}
-      <div className="flex items-start gap-3 mb-1">
+      <div className="flex items-start gap-3">
         {/* Favicon */}
         {project.website && (
           <Favicon url={project.website} name={project.name} size={36} />
@@ -229,7 +229,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
       {/* Description - 独立一行，与标题对齐 */}
       {project.description && (
         <Tooltip content={project.description}>
-          <div className={`mb-2 w-full ${project.website ? 'pl-[48px]' : ''}`}>
+          <div className={`mb-2 mt-0.5 w-full ${project.website ? 'pl-[48px]' : ''}`}>
             <p className="text-sm text-[var(--text-secondary)] cursor-default truncate">
               {project.description}
             </p>
