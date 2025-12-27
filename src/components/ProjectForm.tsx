@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Project, ProjectStatus, Priority } from '../types'
 import { PRESET_TAGS } from '../utils/tagAnalyzer'
 import { DatePicker } from './DatePicker'
+import { ConfirmDialog } from './ConfirmDialog'
 import { X, Plus, Globe, MessageCircle, Flag } from 'lucide-react'
 import gsap from 'gsap'
 
@@ -49,9 +50,49 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
   const [deadline, setDeadline] = useState('')
   const [notes, setNotes] = useState('')
   const [newTag, setNewTag] = useState('')
+  const [showConfirm, setShowConfirm] = useState(false)
   
   const overlayRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
+
+  // 检查表单是否有数据（新建时）或有修改（编辑时）
+  const hasFormData = useCallback(() => {
+    if (project) {
+      // 编辑模式：检查是否有修改
+      return (
+        name !== project.name ||
+        description !== project.description ||
+        website !== (project.website || '') ||
+        twitter !== extractTwitterUsername(project.twitter || '') ||
+        discord !== (project.discord || '') ||
+        status !== project.status ||
+        priority !== (project.priority || 'medium') ||
+        JSON.stringify(tags) !== JSON.stringify(project.tags || []) ||
+        deadline !== (project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : '') ||
+        notes !== project.notes
+      )
+    }
+    // 新建模式：检查是否填写了任何数据
+    return !!(
+      name.trim() ||
+      description.trim() ||
+      website.trim() ||
+      twitter.trim() ||
+      discord.trim() ||
+      tags.length > 0 ||
+      deadline ||
+      notes.trim()
+    )
+  }, [name, description, website, twitter, discord, status, priority, tags, deadline, notes, project])
+
+  // 处理关闭
+  const handleClose = useCallback(() => {
+    if (hasFormData()) {
+      setShowConfirm(true)
+    } else {
+      onCancel()
+    }
+  }, [hasFormData, onCancel])
 
   useEffect(() => {
     if (overlayRef.current && formRef.current) {
@@ -111,7 +152,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
       ref={overlayRef}
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel()
+        if (e.target === e.currentTarget) handleClose()
       }}
       style={{ opacity: 0 }}
     >
@@ -128,7 +169,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
           </h2>
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleClose}
             className="p-2 hover:bg-[var(--input-bg)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
           >
             <X className="w-5 h-5" />
@@ -349,7 +390,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
         <div className="flex gap-3 mt-4 pt-4 border-t border-[var(--border)]">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleClose}
             className="flex-1 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-lg font-medium text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-all"
           >
             取消
@@ -362,6 +403,17 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
           </button>
         </div>
       </form>
+
+      {/* 关闭确认弹窗 */}
+      <ConfirmDialog
+        isOpen={showConfirm}
+        title="放弃编辑？"
+        message="表单中有未保存的内容，确定要放弃吗？"
+        confirmText="放弃"
+        cancelText="继续编辑"
+        onConfirm={onCancel}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   )
 }
