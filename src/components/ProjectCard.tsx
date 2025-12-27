@@ -25,6 +25,7 @@ const priorityConfig = {
 interface Props {
   project: Project
   onEdit: () => void
+  onArchive?: (archived: boolean) => void
   selected?: boolean
   onSelect?: (id: string) => void
   selectionMode?: boolean
@@ -43,7 +44,7 @@ function formatDeadline(timestamp: number): { text: string; urgent: boolean } {
   return { text: new Date(timestamp).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }), urgent: false }
 }
 
-export function ProjectCard({ project, onEdit, selected, onSelect, selectionMode }: Props) {
+export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, selectionMode }: Props) {
   const [newTask, setNewTask] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showTransactionPanel, setShowTransactionPanel] = useState(false)
@@ -563,7 +564,11 @@ export function ProjectCard({ project, onEdit, selected, onSelect, selectionMode
         {/* 归档按钮 */}
         <Tooltip content={project.status === 'archived' ? '取消归档' : '归档项目'}>
           <button
-            onClick={() => updateProject(project.id, { status: project.status === 'archived' ? 'active' : 'archived' })}
+            onClick={() => {
+              const willArchive = project.status !== 'archived'
+              updateProject(project.id, { status: willArchive ? 'archived' : 'active' })
+              onArchive?.(willArchive)
+            }}
             className={`px-2 py-1.5 text-xs font-medium rounded-lg transition-all ${
               project.status === 'archived'
                 ? 'bg-slate-500/20 text-slate-400'

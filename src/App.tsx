@@ -35,6 +35,7 @@ function App() {
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
+  const [archiveToast, setArchiveToast] = useState(false)
   const [notificationEnabled, setNotificationEnabled] = useState(false)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -378,6 +379,13 @@ function App() {
                   setEditingProject(project)
                   setShowForm(true)
                 }}
+                onArchive={(archived) => {
+                  if (archived && !showArchived) {
+                    // 归档后如果不在归档视图，显示提示
+                    setArchiveToast(true)
+                    setTimeout(() => setArchiveToast(false), 3000)
+                  }
+                }}
                 selectionMode={selectionMode}
                 selected={selectedIds.includes(project.id)}
                 onSelect={toggleSelection}
@@ -434,6 +442,22 @@ function App() {
           onClose={() => setShowTemplates(false)}
           onSelect={handleTemplateSelect}
         />
+
+        {/* Archive Toast */}
+        {archiveToast && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl shadow-lg flex items-center gap-3 z-50">
+            <span className="text-slate-300">项目已归档</span>
+            <button
+              onClick={() => {
+                setShowArchived(true)
+                setArchiveToast(false)
+              }}
+              className="text-violet-400 hover:text-violet-300 font-medium"
+            >
+              查看归档
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
