@@ -50,7 +50,7 @@ export function Tooltip({ content, children, position = 'bottom' }: Props) {
       ref={triggerRef}
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => setShow(false)}
-      className="inline-flex"
+      className="inline-flex max-w-full"
     >
       {children}
       {show && (

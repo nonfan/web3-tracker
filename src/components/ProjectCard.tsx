@@ -228,13 +228,13 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
 
       {/* Description - 独立一行，与标题对齐 */}
       {project.description && (
-        <div className={`mb-2 ${project.website ? 'pl-[48px]' : ''}`}>
-          <Tooltip content={project.description}>
-            <p className="text-sm text-[var(--text-secondary)] cursor-default overflow-hidden text-ellipsis whitespace-nowrap">
+        <Tooltip content={project.description}>
+          <div className={`mb-2 w-full ${project.website ? 'pl-[48px]' : ''}`}>
+            <p className="text-sm text-[var(--text-secondary)] cursor-default truncate">
               {project.description}
             </p>
-          </Tooltip>
-        </div>
+          </div>
+        </Tooltip>
       )}
 
       {/* Deadline & Investment/Profit */}
