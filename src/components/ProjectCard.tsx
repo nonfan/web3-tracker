@@ -228,11 +228,13 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
 
       {/* Description - 独立一行，占满宽度 */}
       {project.description && (
-        <Tooltip content={project.description}>
-          <p className="text-sm text-[var(--text-secondary)] truncate cursor-default mb-3">
-            {project.description}
-          </p>
-        </Tooltip>
+        <div className="mb-3 overflow-hidden">
+          <Tooltip content={project.description}>
+            <p className="text-sm text-[var(--text-secondary)] truncate cursor-default">
+              {project.description}
+            </p>
+          </Tooltip>
+        </div>
       )}
 
       {/* Deadline & Investment/Profit */}
