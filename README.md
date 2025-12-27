@@ -1,73 +1,34 @@
-# React + TypeScript + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+██╗    ██╗███████╗██████╗ ██████╗ 
+██║    ██║██╔════╝██╔══██╗╚════██╗
+██║ █╗ ██║█████╗  ██████╔╝ █████╔╝
+██║███╗██║██╔══╝  ██╔══██╗ ╚═══██╗
+╚███╔███╔╝███████╗██████╔╝██████╔╝
+ ╚══╝╚══╝ ╚══════╝╚═════╝ ╚═════╝ 
+        T R A C K E R
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Web3 项目追踪工具，帮助你管理撸毛项目、记录投入收益、追踪任务进度。
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 功能
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- 📋 项目管理 - 添加、编辑、归档项目
+- ✅ 任务清单 - 每个项目独立的任务列表
+- 💰 收益追踪 - 记录每笔投入和收益，自动汇总
+- 📊 数据分析 - 按月、按标签统计投入产出
+- 🔔 截止提醒 - 浏览器通知提醒即将到期的项目
+- ☁️ 云同步 - GitHub Gist 私有存储，多设备同步
+- 📦 项目归档 - 已完成项目归档，保持列表清爽
+- 🎨 项目模板 - 快速创建常见类型项目
+
+## 技术栈
+
+- React + TypeScript
+- Vite
+- Tailwind CSS
+- Zustand
+- GSAP
+
+## 在线访问
+
+https://web3.nonfan.xyz
