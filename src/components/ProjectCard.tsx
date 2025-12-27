@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import type { Project, TransactionType } from '../types'
 import { useStore } from '../store/useStore'
-import { Pencil, Trash2, Globe, MessageCircle, Plus, X, Check, Clock, Flag, DollarSign, TrendingUp, List } from 'lucide-react'
+import { Pencil, Trash2, Globe, MessageCircle, Plus, X, Check, Clock, Flag, DollarSign, TrendingUp, List, Archive, ArchiveRestore } from 'lucide-react'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Favicon } from './Favicon'
 import { Tooltip } from './Tooltip'
@@ -575,7 +575,11 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--input-bg)]'
             }`}
           >
-            📦
+            {project.status === 'archived' ? (
+              <ArchiveRestore className="w-3.5 h-3.5" />
+            ) : (
+              <Archive className="w-3.5 h-3.5" />
+            )}
           </button>
         </Tooltip>
       </div>
