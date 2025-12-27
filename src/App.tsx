@@ -126,7 +126,7 @@ function App() {
   }
 
   const handleSubmit = (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'transactions'>) => {
-    if (editingProject) {
+    if (editingProject?.id) {
       updateProject(editingProject.id, data)
     } else {
       addProject(data)
