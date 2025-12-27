@@ -5,6 +5,7 @@ import { ProjectCard } from './components/ProjectCard'
 import { ProjectForm } from './components/ProjectForm'
 import { DataSync } from './components/DataSync'
 import { GistSync } from './components/GistSync'
+import { TrashBin } from './components/TrashBin'
 import { StatsChart } from './components/StatsChart'
 import { BatchActions } from './components/BatchActions'
 import { ThemeToggle } from './components/ThemeToggle'
@@ -204,6 +205,8 @@ function App() {
                     <Bell className="w-4 h-4" />
                   </button>
                 </Tooltip>
+                <div className="w-px h-5 bg-[var(--border)]" />
+                <TrashBin />
                 <div className="w-px h-5 bg-[var(--border)]" />
                 <GistSync />
                 <div className="w-px h-5 bg-[var(--border)]" />

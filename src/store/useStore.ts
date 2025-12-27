@@ -7,6 +7,7 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       projects: [],
+      deletedProjects: [],
 
       addProject: (projectData) => {
         const now = Date.now()
@@ -32,15 +33,45 @@ export const useStore = create<AppState>()(
       },
 
       deleteProject: (id) => {
-        set((state) => ({
-          projects: state.projects.filter((p) => p.id !== id),
-        }))
+        set((state) => {
+          const project = state.projects.find((p) => p.id === id)
+          if (!project) return state
+          return {
+            projects: state.projects.filter((p) => p.id !== id),
+            deletedProjects: [...state.deletedProjects, { ...project, updatedAt: Date.now() }],
+          }
+        })
       },
 
       deleteProjects: (ids) => {
+        set((state) => {
+          const toDelete = state.projects.filter((p) => ids.includes(p.id))
+          return {
+            projects: state.projects.filter((p) => !ids.includes(p.id)),
+            deletedProjects: [...state.deletedProjects, ...toDelete.map(p => ({ ...p, updatedAt: Date.now() }))],
+          }
+        })
+      },
+
+      restoreProject: (id) => {
+        set((state) => {
+          const project = state.deletedProjects.find((p) => p.id === id)
+          if (!project) return state
+          return {
+            deletedProjects: state.deletedProjects.filter((p) => p.id !== id),
+            projects: [...state.projects, { ...project, updatedAt: Date.now() }],
+          }
+        })
+      },
+
+      permanentDeleteProject: (id) => {
         set((state) => ({
-          projects: state.projects.filter((p) => !ids.includes(p.id)),
+          deletedProjects: state.deletedProjects.filter((p) => p.id !== id),
         }))
+      },
+
+      clearTrash: () => {
+        set({ deletedProjects: [] })
       },
 
       updateProjects: (ids, updates) => {
@@ -130,8 +161,8 @@ export const useStore = create<AppState>()(
       },
 
       exportData: () => {
-        const { projects } = get()
-        return JSON.stringify({ projects, exportedAt: Date.now() }, null, 2)
+        const { projects, deletedProjects } = get()
+        return JSON.stringify({ projects, deletedProjects, exportedAt: Date.now() }, null, 2)
       },
 
       importData: (json) => {
@@ -164,7 +195,10 @@ export const useStore = create<AppState>()(
               }
               return p
             })
-            set({ projects: migratedProjects })
+            set({ 
+              projects: migratedProjects,
+              deletedProjects: data.deletedProjects || [],
+            })
             return true
           }
           return false

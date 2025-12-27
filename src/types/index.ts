@@ -40,11 +40,15 @@ export interface Project {
 
 export interface AppState {
   projects: Project[]
+  deletedProjects: Project[]  // 回收站
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'transactions'>) => void
   updateProject: (id: string, updates: Partial<Project>) => void
   deleteProject: (id: string) => void
   deleteProjects: (ids: string[]) => void
   updateProjects: (ids: string[], updates: Partial<Project>) => void
+  restoreProject: (id: string) => void  // 恢复项目
+  permanentDeleteProject: (id: string) => void  // 永久删除
+  clearTrash: () => void  // 清空回收站
   addTask: (projectId: string, title: string) => void
   toggleTask: (projectId: string, taskId: string) => void
   deleteTask: (projectId: string, taskId: string) => void
