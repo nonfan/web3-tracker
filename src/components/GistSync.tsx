@@ -10,6 +10,7 @@ import {
   syncToGist,
   pullFromGist,
   forcePushToGist,
+  updateSyncStateAfterPull,
   type GistInfo,
   type DiffResult,
 } from '../utils/gistSync'
@@ -247,10 +248,17 @@ export function GistSync() {
   }
 
   // 用云端覆盖本地
-  const handleForceRemote = () => {
+  const handleForceRemote = async () => {
     if (remoteData) {
       const imported = importData(remoteData)
       if (imported) {
+        // 获取云端版本号并更新同步状态
+        try {
+          const parsed = JSON.parse(remoteData)
+          updateSyncStateAfterPull(remoteData, parsed.syncVersion || 0)
+        } catch {
+          // 忽略解析错误
+        }
         showMessage('success', '已用云端数据覆盖本地')
       } else {
         showMessage('error', '导入失败')
@@ -268,6 +276,8 @@ export function GistSync() {
     if (result.success && result.data) {
       const imported = importData(result.data)
       if (imported) {
+        // 更新同步状态
+        updateSyncStateAfterPull(result.data, result.version || 0)
         showMessage('success', '已从云端拉取数据')
       } else {
         showMessage('error', '数据格式错误')

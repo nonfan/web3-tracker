@@ -2,10 +2,18 @@ import type { Project } from '../types'
 
 const GIST_FILENAME = 'web3tracker-data.json'
 const STORAGE_KEY = 'web3tracker-gist-config'
+const SYNC_STATE_KEY = 'web3tracker-sync-state'
 
 interface GistConfig {
   token: string
   gistId: string | null
+}
+
+// 同步状态：记录上次同步的版本号
+interface SyncState {
+  version: number        // 版本号
+  lastSyncAt: number     // 上次同步时间
+  lastSyncHash: string   // 上次同步时的数据哈希
 }
 
 export interface GistInfo {
@@ -19,16 +27,56 @@ export interface DiffResult {
   remoteOnly: Project[]     // 云端新增
   modified: { local: Project; remote: Project }[]  // 两边都改了
   unchanged: Project[]      // 没变化
+  localModified: Project[]  // 本地修改（云端未变）
+  remoteModified: Project[] // 云端修改（本地未变）
 }
 
-// 比较本地和云端数据差异
-export function compareData(localData: string, remoteData: string): DiffResult {
+// 简单的哈希函数
+function simpleHash(str: string): string {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  return hash.toString(36)
+}
+
+// 获取同步状态
+export function getSyncState(): SyncState | null {
+  const stored = localStorage.getItem(SYNC_STATE_KEY)
+  if (!stored) return null
+  try {
+    return JSON.parse(stored)
+  } catch {
+    return null
+  }
+}
+
+// 保存同步状态
+export function saveSyncState(state: SyncState) {
+  localStorage.setItem(SYNC_STATE_KEY, JSON.stringify(state))
+}
+
+// 清除同步状态
+export function clearSyncState() {
+  localStorage.removeItem(SYNC_STATE_KEY)
+}
+
+// 比较本地和云端数据差异（基于上次同步状态）
+export function compareDataWithSync(
+  localData: string, 
+  remoteData: string,
+  syncState: SyncState | null
+): DiffResult {
   const result: DiffResult = {
     hasConflict: false,
     localOnly: [],
     remoteOnly: [],
     modified: [],
     unchanged: [],
+    localModified: [],
+    remoteModified: [],
   }
 
   try {
@@ -37,42 +85,90 @@ export function compareData(localData: string, remoteData: string): DiffResult {
     
     const localProjects: Project[] = local.projects || []
     const remoteProjects: Project[] = remote.projects || []
+    const remoteVersion = remote.syncVersion || 0
     
     const localMap = new Map(localProjects.map(p => [p.id, p]))
     const remoteMap = new Map(remoteProjects.map(p => [p.id, p]))
     
+    const lastSyncAt = syncState?.lastSyncAt || 0
+    
     // 检查本地项目
     for (const [id, localProject] of localMap) {
       const remoteProject = remoteMap.get(id)
+      
       if (!remoteProject) {
         // 本地有，云端没有
-        result.localOnly.push(localProject)
-      } else if (localProject.updatedAt !== remoteProject.updatedAt) {
-        // 两边都有但不一样
-        result.modified.push({ local: localProject, remote: remoteProject })
-        result.hasConflict = true
-      } else {
+        if (localProject.createdAt > lastSyncAt) {
+          // 上次同步后新建的，是本地新增
+          result.localOnly.push(localProject)
+        } else {
+          // 上次同步前就有，说明云端删除了，这是冲突
+          result.localOnly.push(localProject)
+          result.hasConflict = true
+        }
+      } else if (localProject.updatedAt === remoteProject.updatedAt) {
+        // 完全一样
         result.unchanged.push(localProject)
+      } else {
+        // 不一样，判断是谁修改的
+        const localModifiedAfterSync = localProject.updatedAt > lastSyncAt
+        const remoteModifiedAfterSync = remoteProject.updatedAt > lastSyncAt
+        
+        if (localModifiedAfterSync && remoteModifiedAfterSync) {
+          // 两边都修改了 - 冲突
+          result.modified.push({ local: localProject, remote: remoteProject })
+          result.hasConflict = true
+        } else if (localModifiedAfterSync) {
+          // 只有本地修改了
+          result.localModified.push(localProject)
+        } else if (remoteModifiedAfterSync) {
+          // 只有云端修改了
+          result.remoteModified.push(remoteProject)
+          result.hasConflict = true // 需要先拉取
+        } else {
+          // 都没修改但不一样？用更新的那个
+          if (localProject.updatedAt > remoteProject.updatedAt) {
+            result.localModified.push(localProject)
+          } else {
+            result.remoteModified.push(remoteProject)
+            result.hasConflict = true
+          }
+        }
       }
     }
     
     // 检查云端独有的
     for (const [id, remoteProject] of remoteMap) {
       if (!localMap.has(id)) {
-        result.remoteOnly.push(remoteProject)
-        result.hasConflict = true  // 云端有本地没有也算冲突
+        // 云端有，本地没有
+        if (remoteProject.createdAt > lastSyncAt) {
+          // 云端新增的
+          result.remoteOnly.push(remoteProject)
+          result.hasConflict = true // 需要先拉取
+        } else {
+          // 本地删除了
+          result.remoteOnly.push(remoteProject)
+          // 本地删除不算冲突，推送时会删除云端的
+        }
       }
     }
     
-    // 本地新增不算冲突，可以直接推送
-    // 但如果有 modified 或 remoteOnly 就需要处理
+    // 如果云端版本号比本地记录的高，说明有其他设备推送过
+    const localVersion = syncState?.version || 0
+    if (remoteVersion > localVersion && (result.remoteOnly.length > 0 || result.remoteModified.length > 0)) {
+      result.hasConflict = true
+    }
     
   } catch {
-    // 解析失败，当作有冲突
     result.hasConflict = true
   }
   
   return result
+}
+
+// 旧的比较函数保留兼容
+export function compareData(localData: string, remoteData: string): DiffResult {
+  return compareDataWithSync(localData, remoteData, getSyncState())
 }
 
 export function getGistConfig(): GistConfig | null {
@@ -91,6 +187,7 @@ export function saveGistConfig(config: GistConfig) {
 
 export function clearGistConfig() {
   localStorage.removeItem(STORAGE_KEY)
+  clearSyncState()
 }
 
 // 查找所有 Web3Tracker Gist
@@ -134,7 +231,11 @@ export async function validateToken(token: string): Promise<boolean> {
 }
 
 // 创建新的私有 Gist
-async function createGist(token: string, data: string): Promise<string> {
+async function createGist(token: string, data: string, version: number): Promise<string> {
+  // 添加版本号到数据中
+  const dataObj = JSON.parse(data)
+  dataObj.syncVersion = version
+  
   const response = await fetch('https://api.github.com/gists', {
     method: 'POST',
     headers: {
@@ -146,7 +247,7 @@ async function createGist(token: string, data: string): Promise<string> {
       public: false,
       files: {
         [GIST_FILENAME]: {
-          content: data,
+          content: JSON.stringify(dataObj, null, 2),
         },
       },
     }),
@@ -161,7 +262,11 @@ async function createGist(token: string, data: string): Promise<string> {
 }
 
 // 更新现有 Gist
-async function updateGist(token: string, gistId: string, data: string): Promise<void> {
+async function updateGist(token: string, gistId: string, data: string, version: number): Promise<void> {
+  // 添加版本号到数据中
+  const dataObj = JSON.parse(data)
+  dataObj.syncVersion = version
+  
   const response = await fetch(`https://api.github.com/gists/${gistId}`, {
     method: 'PATCH',
     headers: {
@@ -171,7 +276,7 @@ async function updateGist(token: string, gistId: string, data: string): Promise<
     body: JSON.stringify({
       files: {
         [GIST_FILENAME]: {
-          content: data,
+          content: JSON.stringify(dataObj, null, 2),
         },
       },
     }),
@@ -220,7 +325,7 @@ export async function deleteGist(token: string, gistId: string): Promise<boolean
   }
 }
 
-// 同步数据到 Gist（带冲突检测）
+// 同步数据到 Gist（带版本控制）
 export async function syncToGist(data: string): Promise<{ 
   success: boolean
   error?: string
@@ -234,13 +339,16 @@ export async function syncToGist(data: string): Promise<{
     return { success: false, error: '未配置 GitHub Token' }
   }
 
+  const syncState = getSyncState()
+  const currentVersion = (syncState?.version || 0) + 1
+
   try {
     if (config.gistId) {
       // 先拉取云端数据检查冲突
       const remoteData = await readGist(config.token, config.gistId)
       
       if (remoteData) {
-        const diff = compareData(data, remoteData)
+        const diff = compareDataWithSync(data, remoteData, syncState)
         
         if (diff.hasConflict) {
           // 有冲突，返回差异信息让用户处理
@@ -256,11 +364,22 @@ export async function syncToGist(data: string): Promise<{
       
       // 无冲突，直接更新
       try {
-        await updateGist(config.token, config.gistId, data)
+        await updateGist(config.token, config.gistId, data, currentVersion)
+        // 更新同步状态
+        saveSyncState({
+          version: currentVersion,
+          lastSyncAt: Date.now(),
+          lastSyncHash: simpleHash(data),
+        })
       } catch (e) {
         if (e instanceof Error && e.message === 'GIST_NOT_FOUND') {
-          const newGistId = await createGist(config.token, data)
+          const newGistId = await createGist(config.token, data, currentVersion)
           saveGistConfig({ ...config, gistId: newGistId })
+          saveSyncState({
+            version: currentVersion,
+            lastSyncAt: Date.now(),
+            lastSyncHash: simpleHash(data),
+          })
         } else {
           throw e
         }
@@ -272,8 +391,13 @@ export async function syncToGist(data: string): Promise<{
         return { success: false, needSelect: true, error: `已有 ${existingGists.length} 个云端存储，请先在设置中选择要使用的存储` }
       }
       // 没有已有的，创建新的
-      const gistId = await createGist(config.token, data)
+      const gistId = await createGist(config.token, data, currentVersion)
       saveGistConfig({ ...config, gistId })
+      saveSyncState({
+        version: currentVersion,
+        lastSyncAt: Date.now(),
+        lastSyncHash: simpleHash(data),
+      })
     }
     return { success: true }
   } catch (e) {
@@ -288,8 +412,16 @@ export async function forcePushToGist(data: string): Promise<{ success: boolean;
     return { success: false, error: '未配置' }
   }
 
+  const syncState = getSyncState()
+  const currentVersion = (syncState?.version || 0) + 1
+
   try {
-    await updateGist(config.token, config.gistId, data)
+    await updateGist(config.token, config.gistId, data, currentVersion)
+    saveSyncState({
+      version: currentVersion,
+      lastSyncAt: Date.now(),
+      lastSyncHash: simpleHash(data),
+    })
     return { success: true }
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '推送失败' }
@@ -297,7 +429,7 @@ export async function forcePushToGist(data: string): Promise<{ success: boolean;
 }
 
 // 从 Gist 拉取数据
-export async function pullFromGist(): Promise<{ success: boolean; data?: string; error?: string }> {
+export async function pullFromGist(): Promise<{ success: boolean; data?: string; error?: string; version?: number }> {
   const config = getGistConfig()
   if (!config?.token) {
     return { success: false, error: '未配置 GitHub Token' }
@@ -312,8 +444,22 @@ export async function pullFromGist(): Promise<{ success: boolean; data?: string;
     if (!data) {
       return { success: false, error: '云端数据为空' }
     }
-    return { success: true, data }
+    
+    // 解析版本号
+    const dataObj = JSON.parse(data)
+    const version = dataObj.syncVersion || 0
+    
+    return { success: true, data, version }
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '拉取失败' }
   }
+}
+
+// 拉取后更新同步状态
+export function updateSyncStateAfterPull(data: string, version: number) {
+  saveSyncState({
+    version,
+    lastSyncAt: Date.now(),
+    lastSyncHash: simpleHash(data),
+  })
 }
