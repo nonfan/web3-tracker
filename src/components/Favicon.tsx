@@ -8,14 +8,22 @@ interface Props {
 }
 
 export function Favicon({ url, name, size = 32 }: Props) {
-  const [useGoogle, setUseGoogle] = useState(false)
-  const [error, setError] = useState(false)
+  const [fallbackLevel, setFallbackLevel] = useState(0)
   
-  const faviconUrl = useGoogle 
-    ? getGoogleFaviconUrl(url, 64) 
-    : getFaviconUrl(url)
+  const getFallbackUrl = () => {
+    switch (fallbackLevel) {
+      case 0:
+        return getFaviconUrl(url) // favicon.im
+      case 1:
+        return getGoogleFaviconUrl(url) // Google 128px
+      default:
+        return null
+    }
+  }
+  
+  const faviconUrl = getFallbackUrl()
 
-  if (!faviconUrl || error) {
+  if (!faviconUrl) {
     // 显示首字母作为占位
     return (
       <div 
@@ -33,16 +41,9 @@ export function Favicon({ url, name, size = 32 }: Props) {
       alt={`${name} logo`}
       width={size}
       height={size}
-      className="rounded-lg object-contain bg-white/5 shrink-0"
-      onError={() => {
-        if (!useGoogle) {
-          // 先尝试 Google 备用源
-          setUseGoogle(true)
-        } else {
-          // 都失败了显示占位符
-          setError(true)
-        }
-      }}
+      className="rounded-lg object-cover shrink-0"
+      style={{ imageRendering: 'auto' }}
+      onError={() => setFallbackLevel(prev => prev + 1)}
       loading="lazy"
     />
   )

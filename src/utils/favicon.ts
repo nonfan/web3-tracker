@@ -1,6 +1,6 @@
 /**
  * 获取网站 favicon URL
- * 优先使用 DuckDuckGo 的图标服务，质量更好
+ * 使用 Favicon.im 服务，支持高清图标
  */
 export function getFaviconUrl(websiteUrl: string): string | null {
   if (!websiteUrl) return null
@@ -8,8 +8,8 @@ export function getFaviconUrl(websiteUrl: string): string | null {
   try {
     const url = new URL(websiteUrl)
     const domain = url.hostname
-    // DuckDuckGo 图标服务，质量更好
-    return `https://icons.duckduckgo.com/ip3/${domain}.ico`
+    // Favicon.im 提供高清图标
+    return `https://favicon.im/${domain}?larger=true`
   } catch {
     return null
   }
@@ -18,13 +18,13 @@ export function getFaviconUrl(websiteUrl: string): string | null {
 /**
  * 备用方案：使用 Google favicon 服务
  */
-export function getGoogleFaviconUrl(websiteUrl: string, size: number = 64): string | null {
+export function getGoogleFaviconUrl(websiteUrl: string): string | null {
   if (!websiteUrl) return null
   
   try {
     const url = new URL(websiteUrl)
     const domain = url.hostname
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
   } catch {
     return null
   }
