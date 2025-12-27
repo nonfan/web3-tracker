@@ -16,7 +16,7 @@ import { TemplateSelector } from './components/TemplateSelector'
 import type { ProjectTemplate } from './utils/templates'
 import { requestNotificationPermission, sendNotification, checkDeadlines, shouldNotifyToday, markNotified } from './utils/notifications'
 import type { Project, ProjectStatus, Priority } from './types'
-import { Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc, BarChart3, Bell, Archive, ChevronDown } from 'lucide-react'
+import { Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc, BarChart3, Bell, Archive, ArchiveX, ChevronDown } from 'lucide-react'
 
 type FilterStatus = ProjectStatus | 'all'
 type SortBy = 'updated' | 'priority' | 'deadline' | 'name'
@@ -324,7 +324,7 @@ function App() {
                 </button>
               ))}
               {/* 归档按钮 */}
-              <Tooltip content={`${stats.archived} 个已归档`}>
+              <Tooltip content={showArchived ? '返回项目列表' : `${stats.archived} 个已归档`}>
                 <button
                   onClick={() => setShowArchived(!showArchived)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
@@ -333,7 +333,7 @@ function App() {
                       : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
                   }`}
                 >
-                  <Archive className="w-4 h-4" />
+                  {showArchived ? <ArchiveX className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                   {stats.archived > 0 && <span>{stats.archived}</span>}
                 </button>
               </Tooltip>
