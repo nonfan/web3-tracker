@@ -196,7 +196,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
           </div>
           {project.description && (
             <Tooltip content={project.description}>
-              <p className="text-sm text-[var(--text-secondary)] line-clamp-1 cursor-default">
+              <p className="text-sm text-[var(--text-secondary)] line-clamp-2 cursor-default">
                 {project.description}
               </p>
             </Tooltip>
