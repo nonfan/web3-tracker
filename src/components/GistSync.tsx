@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useStore } from '../store/useStore'
 import type { Project } from '../types'
 import {
@@ -15,8 +15,34 @@ import {
   type DiffResult,
 } from '../utils/gistSync'
 import { Tooltip } from './Tooltip'
-import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown, AlertTriangle } from 'lucide-react'
+import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown, AlertTriangle, Copy } from 'lucide-react'
 import gsap from 'gsap'
+
+// 复制按钮组件，带勾选状态反馈
+function CopyButton({ text, onCopy, className = '' }: { text: string; onCopy?: () => void; className?: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    onCopy?.()
+    setTimeout(() => setCopied(false), 2000)
+  }, [text, onCopy])
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className={`transition-all flex items-center justify-center w-[54px] ${className}`}
+    >
+      {copied ? (
+        <Check className="w-4 h-4 text-emerald-400" />
+      ) : (
+        <span>复制</span>
+      )}
+    </button>
+  )
+}
 
 interface GistDropdownProps {
   value: string
@@ -353,10 +379,10 @@ export function GistSync() {
         )}
       </div>
 
-      {/* Message Toast */}
+      {/* Message Toast - z-[9999] 确保在所有遮罩层之上 */}
       {message && (
         <div
-          className={`fixed top-4 right-4 px-4 py-3 rounded-xl flex items-center gap-2 z-50 shadow-lg ${
+          className={`fixed top-4 right-4 px-4 py-3 rounded-xl flex items-center gap-2 z-[9999] shadow-lg ${
             message.type === 'success'
               ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400'
               : 'bg-red-500/20 border border-red-500/30 text-red-400'
@@ -422,16 +448,11 @@ export function GistSync() {
                     placeholder="ghp_xxxxxxxxxxxx"
                   />
                   {token && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(token)
-                        showMessage('success', 'Token 已复制')
-                      }}
-                      className="px-3 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all"
-                    >
-                      复制
-                    </button>
+                    <CopyButton
+                      text={token}
+                      onCopy={() => showMessage('success', 'Token 已复制')}
+                      className="px-3 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                    />
                   )}
                 </div>
               </div>
@@ -472,16 +493,11 @@ export function GistSync() {
                           <p className="text-xs text-[var(--text-secondary)] truncate">{gist.id}</p>
                           <p className="text-xs text-[var(--text-muted)]">{formatDate(gist.updatedAt)}</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(gist.id)
-                            showMessage('success', 'ID 已复制')
-                          }}
-                          className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors text-xs ml-2"
-                        >
-                          复制
-                        </button>
+                        <CopyButton
+                          text={gist.id}
+                          onCopy={() => showMessage('success', 'ID 已复制')}
+                          className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs ml-2"
+                        />
                       </div>
                     ))}
                   </div>
