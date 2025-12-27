@@ -11,8 +11,10 @@ import { ThemeToggle } from './components/ThemeToggle'
 import { Tooltip } from './components/Tooltip'
 import { Dropdown } from './components/Dropdown'
 import { LogoWithText } from './components/LogoWithText'
+import { Analytics } from './components/Analytics'
+import { requestNotificationPermission, sendNotification, checkDeadlines, shouldNotifyToday, markNotified } from './utils/notifications'
 import type { Project, ProjectStatus, Priority } from './types'
-import { Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc } from 'lucide-react'
+import { Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc, BarChart3, Bell } from 'lucide-react'
 
 type FilterStatus = ProjectStatus | 'all'
 type SortBy = 'updated' | 'priority' | 'deadline' | 'name'
@@ -28,6 +30,8 @@ function App() {
   const [search, setSearch] = useState('')
   const [tagFilter, setTagFilter] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<SortBy>('updated')
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [notificationEnabled, setNotificationEnabled] = useState(false)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
@@ -35,6 +39,36 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
+
+  // 检查通知权限
+  useEffect(() => {
+    setNotificationEnabled(Notification.permission === 'granted')
+  }, [])
+
+  // 检查截止日期提醒
+  useEffect(() => {
+    if (!notificationEnabled || !shouldNotifyToday()) return
+    
+    const upcoming = checkDeadlines(projects)
+    if (upcoming.length > 0) {
+      const message = upcoming.map(p => 
+        p.daysLeft === 0 ? `${p.name} 今天到期！` :
+        p.daysLeft === 1 ? `${p.name} 明天到期` :
+        `${p.name} ${p.daysLeft}天后到期`
+      ).join('\n')
+      
+      sendNotification('项目截止提醒', message)
+      markNotified()
+    }
+  }, [projects, notificationEnabled])
+
+  const handleEnableNotification = async () => {
+    const granted = await requestNotificationPermission()
+    setNotificationEnabled(granted)
+    if (granted) {
+      sendNotification('通知已开启', '将在项目截止前提醒你')
+    }
+  }
 
   // 获取所有标签
   const allTags = useMemo(() => {
@@ -78,7 +112,7 @@ function App() {
     launched: projects.filter((p) => p.status === 'launched').length,
   }
 
-  const handleSubmit = (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks'>) => {
+  const handleSubmit = (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'transactions'>) => {
     if (editingProject) {
       updateProject(editingProject.id, data)
     } else {
@@ -113,6 +147,28 @@ function App() {
               {/* 工具按钮组 */}
               <div className="flex items-center gap-1 bg-[var(--input-bg)] border border-[var(--border)] p-1 rounded-xl">
                 <ThemeToggle />
+                <div className="w-px h-5 bg-[var(--border)]" />
+                <Tooltip content="数据分析">
+                  <button
+                    onClick={() => setShowAnalytics(true)}
+                    className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-violet-400 hover:bg-violet-500/10 transition-all"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+                <div className="w-px h-5 bg-[var(--border)]" />
+                <Tooltip content={notificationEnabled ? '通知已开启' : '开启截止提醒'}>
+                  <button
+                    onClick={handleEnableNotification}
+                    className={`p-2 rounded-lg transition-all ${
+                      notificationEnabled 
+                        ? 'text-emerald-400 hover:bg-emerald-500/10' 
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)]'
+                    }`}
+                  >
+                    <Bell className="w-4 h-4" />
+                  </button>
+                </Tooltip>
                 <div className="w-px h-5 bg-[var(--border)]" />
                 <GistSync />
                 <div className="w-px h-5 bg-[var(--border)]" />
@@ -308,6 +364,13 @@ function App() {
         {selectionMode && (
           <BatchActions selectedIds={selectedIds} onClear={exitSelectionMode} />
         )}
+
+        {/* Analytics Modal */}
+        <Analytics 
+          projects={projects} 
+          isOpen={showAnalytics} 
+          onClose={() => setShowAnalytics(false)} 
+        />
       </div>
     </div>
   )
