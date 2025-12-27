@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
-import type { AppState, Project } from '../types'
+import type { AppState, Project, TransactionType } from '../types'
 
 export const useStore = create<AppState>()(
   persist(
@@ -14,6 +14,7 @@ export const useStore = create<AppState>()(
           ...projectData,
           id: uuidv4(),
           tasks: [],
+          transactions: [],
           tags: projectData.tags || [],
           priority: projectData.priority || 'medium',
           createdAt: now,
@@ -97,6 +98,37 @@ export const useStore = create<AppState>()(
         }))
       },
 
+      addTransaction: (projectId: string, type: TransactionType, amount: number, note?: string) => {
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  transactions: [
+                    ...(p.transactions || []),
+                    { id: uuidv4(), type, amount, note, createdAt: Date.now() },
+                  ],
+                  updatedAt: Date.now(),
+                }
+              : p
+          ),
+        }))
+      },
+
+      deleteTransaction: (projectId: string, transactionId: string) => {
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  transactions: (p.transactions || []).filter((t) => t.id !== transactionId),
+                  updatedAt: Date.now(),
+                }
+              : p
+          ),
+        }))
+      },
+
       exportData: () => {
         const { projects } = get()
         return JSON.stringify({ projects, exportedAt: Date.now() }, null, 2)
@@ -106,7 +138,33 @@ export const useStore = create<AppState>()(
         try {
           const data = JSON.parse(json)
           if (data.projects && Array.isArray(data.projects)) {
-            set({ projects: data.projects })
+            // 兼容旧数据：将 investment/profit 转换为 transactions
+            const migratedProjects = data.projects.map((p: Project) => {
+              if (!p.transactions) {
+                const transactions = []
+                if (p.investment && p.investment > 0) {
+                  transactions.push({
+                    id: uuidv4(),
+                    type: 'investment' as const,
+                    amount: p.investment,
+                    note: '历史数据迁移',
+                    createdAt: p.createdAt,
+                  })
+                }
+                if (p.profit !== undefined && p.profit !== 0) {
+                  transactions.push({
+                    id: uuidv4(),
+                    type: 'profit' as const,
+                    amount: p.profit,
+                    note: '历史数据迁移',
+                    createdAt: p.createdAt,
+                  })
+                }
+                return { ...p, transactions }
+              }
+              return p
+            })
+            set({ projects: migratedProjects })
             return true
           }
           return false
