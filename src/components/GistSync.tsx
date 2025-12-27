@@ -15,7 +15,7 @@ import {
   type DiffResult,
 } from '../utils/gistSync'
 import { Tooltip } from './Tooltip'
-import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown, AlertTriangle, Copy } from 'lucide-react'
+import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown, AlertTriangle } from 'lucide-react'
 import gsap from 'gsap'
 
 // 复制按钮组件，带勾选状态反馈
