@@ -228,9 +228,9 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
 
       {/* Description - 独立一行，与标题对齐 */}
       {project.description && (
-        <div className={`mb-3 overflow-hidden ${project.website ? 'pl-[48px]' : ''}`}>
+        <div className={`mb-2 ${project.website ? 'pl-[48px]' : ''}`}>
           <Tooltip content={project.description}>
-            <p className="text-sm text-[var(--text-secondary)] truncate cursor-default">
+            <p className="text-sm text-[var(--text-secondary)] cursor-default overflow-hidden text-ellipsis whitespace-nowrap">
               {project.description}
             </p>
           </Tooltip>
