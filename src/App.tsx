@@ -180,19 +180,9 @@ function App() {
             
             {/* Actions */}
             <div className="flex items-center gap-2 flex-wrap">
-              {/* 工具按钮组 */}
+              {/* 主题 & 通知 */}
               <div className="flex items-center gap-1 bg-[var(--input-bg)] border border-[var(--border)] p-1 rounded-xl">
                 <ThemeToggle />
-                <div className="w-px h-5 bg-[var(--border)]" />
-                <Tooltip content="数据分析">
-                  <button
-                    onClick={() => setShowAnalytics(true)}
-                    className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-violet-400 hover:bg-violet-500/10 transition-all"
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-                <div className="w-px h-5 bg-[var(--border)]" />
                 <Tooltip content={notificationEnabled ? '通知已开启' : '开启截止提醒'}>
                   <button
                     onClick={handleEnableNotification}
@@ -205,9 +195,23 @@ function App() {
                     <Bell className="w-4 h-4" />
                   </button>
                 </Tooltip>
-                <div className="w-px h-5 bg-[var(--border)]" />
+              </div>
+
+              {/* 数据分析 & 回收站 */}
+              <div className="flex items-center gap-1 bg-[var(--input-bg)] border border-[var(--border)] p-1 rounded-xl">
+                <Tooltip content="数据分析">
+                  <button
+                    onClick={() => setShowAnalytics(true)}
+                    className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-violet-400 hover:bg-violet-500/10 transition-all"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                  </button>
+                </Tooltip>
                 <TrashBin />
-                <div className="w-px h-5 bg-[var(--border)]" />
+              </div>
+
+              {/* 云同步 & 数据导入导出 */}
+              <div className="flex items-center gap-1 bg-[var(--input-bg)] border border-[var(--border)] p-1 rounded-xl">
                 <GistSync />
                 <div className="w-px h-5 bg-[var(--border)]" />
                 <DataSync />
