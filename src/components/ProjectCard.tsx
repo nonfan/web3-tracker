@@ -226,9 +226,9 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
         )}
       </div>
 
-      {/* Description - 独立一行，占满宽度 */}
+      {/* Description - 独立一行，与标题对齐 */}
       {project.description && (
-        <div className="mb-3 overflow-hidden">
+        <div className={`mb-3 overflow-hidden ${project.website ? 'pl-[48px]' : ''}`}>
           <Tooltip content={project.description}>
             <p className="text-sm text-[var(--text-secondary)] truncate cursor-default">
               {project.description}
