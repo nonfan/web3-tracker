@@ -162,14 +162,14 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
       onClick={() => selectionMode && onSelect?.(project.id)}
     >
       {/* Header */}
-      <div className="flex items-start gap-3 mb-3">
+      <div className="flex items-start gap-3 mb-1">
         {/* Favicon */}
         {project.website && (
           <Favicon url={project.website} name={project.name} size={36} />
         )}
         
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {selectionMode && (
               <button
                 onClick={(e) => {
@@ -194,13 +194,6 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
               </span>
             )}
           </div>
-          {project.description && (
-            <Tooltip content={project.description}>
-              <p className="text-sm text-[var(--text-secondary)] line-clamp-2 cursor-default">
-                {project.description}
-              </p>
-            </Tooltip>
-          )}
         </div>
         {!selectionMode && (
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -232,6 +225,15 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
           </div>
         )}
       </div>
+
+      {/* Description - 独立一行，占满宽度 */}
+      {project.description && (
+        <Tooltip content={project.description}>
+          <p className="text-sm text-[var(--text-secondary)] truncate cursor-default mb-3">
+            {project.description}
+          </p>
+        </Tooltip>
+      )}
 
       {/* Deadline & Investment/Profit */}
       <div className="flex flex-wrap items-center gap-2 mb-3 text-xs">
