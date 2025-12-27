@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { Tooltip } from './Tooltip'
 import { ConfirmDialog } from './ConfirmDialog'
+import { Favicon } from './Favicon'
 import { Trash2, X, RotateCcw, Trash } from 'lucide-react'
 import gsap from 'gsap'
 
@@ -97,13 +98,20 @@ export function TrashBin() {
                       className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--input-bg)] transition-colors group"
                     >
                       {/* Logo */}
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center text-violet-400 font-bold text-sm shrink-0">
-                        {project.name.slice(0, 2).toUpperCase()}
-                      </div>
+                      {project.website ? (
+                        <Favicon url={project.website} name={project.name} size={40} />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center text-violet-400 font-bold text-sm shrink-0">
+                          {project.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
                       
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-[var(--text-primary)] truncate">{project.name}</p>
+                        {project.description && (
+                          <p className="text-xs text-[var(--text-muted)] truncate">{project.description}</p>
+                        )}
                       </div>
 
                       {/* Actions */}
