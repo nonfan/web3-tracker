@@ -57,8 +57,9 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
 
   // 检查表单是否有数据（新建时）或有修改（编辑时）
   const hasFormData = useCallback(() => {
-    if (project) {
-      // 编辑模式：检查是否有修改
+    // 编辑模式：有 project 且有 id
+    if (project && project.id) {
+      // 检查是否有修改
       return (
         name !== project.name ||
         description !== project.description ||
@@ -72,7 +73,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
         notes !== project.notes
       )
     }
-    // 新建模式：检查是否填写了任何数据
+    // 新建模式（包括模板）：检查是否填写了任何数据
     return !!(
       name.trim() ||
       description.trim() ||
@@ -165,7 +166,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-            {project ? '编辑项目' : '添加项目'}
+            {project?.id ? '编辑项目' : '添加项目'}
           </h2>
           <button
             type="button"
@@ -399,7 +400,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
             type="submit"
             className="flex-1 py-2 bg-gradient-to-r from-violet-600 to-purple-600 rounded-lg font-medium text-sm hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-500/20 text-white"
           >
-            {project ? '保存' : '添加'}
+            {project?.id ? '保存' : '添加'}
           </button>
         </div>
       </form>
