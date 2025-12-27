@@ -13,6 +13,7 @@ const statusConfig = {
   completed: { bg: 'bg-blue-500/20', text: 'text-blue-400', dot: 'bg-blue-400', label: '已完成' },
   launched: { bg: 'bg-violet-500/20', text: 'text-violet-400', dot: 'bg-violet-400', label: '已发币' },
   dead: { bg: 'bg-gray-500/20', text: 'text-gray-400', dot: 'bg-gray-400', label: '已凉' },
+  archived: { bg: 'bg-slate-500/20', text: 'text-slate-400', dot: 'bg-slate-400', label: '已归档' },
 }
 
 const priorityConfig = {
@@ -559,6 +560,19 @@ export function ProjectCard({ project, onEdit, selected, onSelect, selectionMode
             </button>
           )
         })}
+        {/* 归档按钮 */}
+        <Tooltip content={project.status === 'archived' ? '取消归档' : '归档项目'}>
+          <button
+            onClick={() => updateProject(project.id, { status: project.status === 'archived' ? 'active' : 'archived' })}
+            className={`px-2 py-1.5 text-xs font-medium rounded-lg transition-all ${
+              project.status === 'archived'
+                ? 'bg-slate-500/20 text-slate-400'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--input-bg)]'
+            }`}
+          >
+            📦
+          </button>
+        </Tooltip>
       </div>
 
       <ConfirmDialog

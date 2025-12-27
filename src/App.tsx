@@ -12,9 +12,11 @@ import { Tooltip } from './components/Tooltip'
 import { Dropdown } from './components/Dropdown'
 import { LogoWithText } from './components/LogoWithText'
 import { Analytics } from './components/Analytics'
+import { TemplateSelector } from './components/TemplateSelector'
+import type { ProjectTemplate } from './utils/templates'
 import { requestNotificationPermission, sendNotification, checkDeadlines, shouldNotifyToday, markNotified } from './utils/notifications'
 import type { Project, ProjectStatus, Priority } from './types'
-import { Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc, BarChart3, Bell } from 'lucide-react'
+import { Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc, BarChart3, Bell, Archive, ChevronDown } from 'lucide-react'
 
 type FilterStatus = ProjectStatus | 'all'
 type SortBy = 'updated' | 'priority' | 'deadline' | 'name'
@@ -31,6 +33,8 @@ function App() {
   const [tagFilter, setTagFilter] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<SortBy>('updated')
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const [notificationEnabled, setNotificationEnabled] = useState(false)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -85,7 +89,13 @@ function App() {
 
   const filteredProjects = useMemo(() => {
     return projects
-      .filter((p) => filter === 'all' || p.status === filter)
+      .filter((p) => {
+        // 归档筛选
+        if (showArchived) return p.status === 'archived'
+        if (p.status === 'archived') return false
+        // 状态筛选
+        return filter === 'all' || p.status === filter
+      })
       .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
       .filter((p) => !tagFilter || p.tags.includes(tagFilter))
       .sort((a, b) => {
@@ -103,13 +113,14 @@ function App() {
             return b.updatedAt - a.updatedAt
         }
       })
-  }, [projects, filter, search, tagFilter, sortBy])
+  }, [projects, filter, search, tagFilter, sortBy, showArchived])
 
   const stats = {
-    total: projects.length,
+    total: projects.filter(p => p.status !== 'archived').length,
     active: projects.filter((p) => p.status === 'active').length,
     completed: projects.filter((p) => p.status === 'completed').length,
     launched: projects.filter((p) => p.status === 'launched').length,
+    archived: projects.filter((p) => p.status === 'archived').length,
   }
 
   const handleSubmit = (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'transactions'>) => {
@@ -131,6 +142,29 @@ function App() {
   const exitSelectionMode = () => {
     setSelectionMode(false)
     setSelectedIds([])
+  }
+
+  const handleTemplateSelect = (template: ProjectTemplate) => {
+    // 设置编辑项目为模板数据
+    setEditingProject({
+      id: '',
+      name: '',
+      description: '',
+      status: 'active',
+      priority: template.defaultData.priority,
+      tags: template.defaultData.tags,
+      tasks: template.defaultData.tasks.map((title, i) => ({
+        id: `temp-${i}`,
+        title,
+        completed: false,
+        createdAt: Date.now(),
+      })),
+      transactions: [],
+      notes: '',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    } as Project)
+    setShowForm(true)
   }
 
   return (
@@ -186,13 +220,21 @@ function App() {
                       <CheckSquare className="w-4 h-4" />
                     </button>
                   </Tooltip>
-                  <button
-                    onClick={() => setShowForm(true)}
-                    className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl hover:from-violet-500 hover:to-purple-500 font-medium flex items-center gap-2 shadow-lg shadow-violet-500/25 transition-all hover:shadow-violet-500/40 text-white text-sm"
-                  >
-                    <Plus className="w-4 h-4" />
-                    添加项目
-                  </button>
+                  <div className="flex">
+                    <button
+                      onClick={() => setShowForm(true)}
+                      className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 rounded-l-xl hover:from-violet-500 hover:to-purple-500 font-medium flex items-center gap-2 shadow-lg shadow-violet-500/25 transition-all hover:shadow-violet-500/40 text-white text-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      添加项目
+                    </button>
+                    <button
+                      onClick={() => setShowTemplates(true)}
+                      className="px-2 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 rounded-r-xl hover:from-purple-500 hover:to-purple-600 font-medium shadow-lg shadow-violet-500/25 transition-all hover:shadow-violet-500/40 text-white text-sm border-l border-white/20"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button
@@ -280,6 +322,20 @@ function App() {
                   {f.label}
                 </button>
               ))}
+              {/* 归档按钮 */}
+              <Tooltip content={`${stats.archived} 个已归档`}>
+                <button
+                  onClick={() => setShowArchived(!showArchived)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                    showArchived
+                      ? 'bg-slate-500/20 text-slate-400'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                  }`}
+                >
+                  <Archive className="w-4 h-4" />
+                  {stats.archived > 0 && <span>{stats.archived}</span>}
+                </button>
+              </Tooltip>
             </div>
           </div>
 
@@ -370,6 +426,13 @@ function App() {
           projects={projects} 
           isOpen={showAnalytics} 
           onClose={() => setShowAnalytics(false)} 
+        />
+
+        {/* Template Selector */}
+        <TemplateSelector
+          isOpen={showTemplates}
+          onClose={() => setShowTemplates(false)}
+          onSelect={handleTemplateSelect}
         />
       </div>
     </div>

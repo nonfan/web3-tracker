@@ -1,4 +1,4 @@
-export type ProjectStatus = 'active' | 'completed' | 'launched' | 'dead'
+export type ProjectStatus = 'active' | 'completed' | 'launched' | 'dead' | 'archived'
 export type Priority = 'high' | 'medium' | 'low'
 export type TransactionType = 'investment' | 'profit'
 
