@@ -20,7 +20,7 @@ import type { Project, ProjectStatus, Priority } from './types'
 import { Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc, BarChart3, Bell, Archive, ArchiveX, ChevronDown } from 'lucide-react'
 
 type FilterStatus = ProjectStatus | 'all'
-type SortBy = 'updated' | 'priority' | 'deadline' | 'name'
+type SortBy = 'created' | 'updated' | 'priority' | 'deadline' | 'name'
 
 const priorityOrder: Record<Priority, number> = { high: 0, medium: 1, low: 2 }
 
@@ -32,7 +32,7 @@ function App() {
   const [filter, setFilter] = useState<FilterStatus>('all')
   const [search, setSearch] = useState('')
   const [tagFilter, setTagFilter] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<SortBy>('updated')
+  const [sortBy, setSortBy] = useState<SortBy>('created')
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
@@ -102,6 +102,8 @@ function App() {
       .filter((p) => !tagFilter || p.tags.includes(tagFilter))
       .sort((a, b) => {
         switch (sortBy) {
+          case 'updated':
+            return b.updatedAt - a.updatedAt
           case 'priority':
             return priorityOrder[a.priority || 'medium'] - priorityOrder[b.priority || 'medium']
           case 'deadline':
@@ -111,8 +113,9 @@ function App() {
             return a.deadline - b.deadline
           case 'name':
             return a.name.localeCompare(b.name)
+          case 'created':
           default:
-            return b.updatedAt - a.updatedAt
+            return b.createdAt - a.createdAt
         }
       })
   }, [projects, filter, search, tagFilter, sortBy, showArchived])
@@ -304,6 +307,7 @@ function App() {
               onChange={(v) => setSortBy(v as SortBy)}
               icon={<SortAsc className="w-4 h-4 text-[var(--text-muted)]" />}
               options={[
+                { value: 'created', label: '创建时间' },
                 { value: 'updated', label: '最近更新' },
                 { value: 'priority', label: '优先级' },
                 { value: 'deadline', label: '截止日期' },
@@ -377,28 +381,29 @@ function App() {
           )}
         </div>
 
-        {/* Projects Grid */}
+        {/* Projects Grid - 瀑布流布局 */}
         {filteredProjects.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
             {filteredProjects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onEdit={() => {
-                  setEditingProject(project)
-                  setShowForm(true)
-                }}
-                onArchive={(archived) => {
-                  if (archived && !showArchived) {
-                    // 归档后如果不在归档视图，显示提示
-                    setArchiveToast(true)
-                    setTimeout(() => setArchiveToast(false), 3000)
-                  }
-                }}
-                selectionMode={selectionMode}
-                selected={selectedIds.includes(project.id)}
-                onSelect={toggleSelection}
-              />
+              <div key={project.id} className="break-inside-avoid">
+                <ProjectCard
+                  project={project}
+                  onEdit={() => {
+                    setEditingProject(project)
+                    setShowForm(true)
+                  }}
+                  onArchive={(archived) => {
+                    if (archived && !showArchived) {
+                      // 归档后如果不在归档视图，显示提示
+                      setArchiveToast(true)
+                      setTimeout(() => setArchiveToast(false), 3000)
+                    }
+                  }}
+                  selectionMode={selectionMode}
+                  selected={selectedIds.includes(project.id)}
+                  onSelect={toggleSelection}
+                />
+              </div>
             ))}
           </div>
         ) : (
