@@ -131,7 +131,7 @@ function App() {
     } else {
       // 新建项目时，如果有模板任务则一起传入
       const tasks = editingProject?.tasks || []
-      addProject({ ...data, tasks })
+      addProject({ ...data, tasks, transactions: [] })
     }
     setShowForm(false)
     setEditingProject(undefined)

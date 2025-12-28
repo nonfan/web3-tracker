@@ -41,7 +41,7 @@ export interface Project {
 export interface AppState {
   projects: Project[]
   deletedProjects: Project[]  // 回收站
-  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'> & { tasks?: Task[]; transactions?: Transaction[] }) => void
+  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateProject: (id: string, updates: Partial<Project>) => void
   deleteProject: (id: string) => void
   deleteProjects: (ids: string[]) => void
