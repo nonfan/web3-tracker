@@ -14,8 +14,8 @@ export const useStore = create<AppState>()(
         const project: Project = {
           ...projectData,
           id: uuidv4(),
-          tasks: [],
-          transactions: [],
+          tasks: projectData.tasks || [],
+          transactions: projectData.transactions || [],
           tags: projectData.tags || [],
           priority: projectData.priority || 'medium',
           createdAt: now,

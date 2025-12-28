@@ -129,7 +129,9 @@ function App() {
     if (editingProject?.id) {
       updateProject(editingProject.id, data)
     } else {
-      addProject(data)
+      // 新建项目时，如果有模板任务则一起传入
+      const tasks = editingProject?.tasks || []
+      addProject({ ...data, tasks })
     }
     setShowForm(false)
     setEditingProject(undefined)
