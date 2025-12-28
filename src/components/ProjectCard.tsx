@@ -529,22 +529,40 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
         </div>
       )}
 
-      {/* Add Task */}
-      <form onSubmit={handleAddTask} className="flex gap-2">
-        <input
-          type="text"
-          value={newTask}
-          onChange={(e) => setNewTask(e.target.value)}
-          placeholder="添加任务..."
-          className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
-        />
-        <button
-          type="submit"
-          className="px-3 py-2 bg-violet-600 hover:bg-violet-500 rounded-lg text-sm transition-colors text-white"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-      </form>
+      {/* Add Task - 只在有任务时显示完整输入框，否则显示紧凑按钮 */}
+      {project.tasks.length > 0 ? (
+        <form onSubmit={handleAddTask} className="flex gap-2">
+          <input
+            type="text"
+            value={newTask}
+            onChange={(e) => setNewTask(e.target.value)}
+            placeholder="添加任务..."
+            className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+          />
+          <button
+            type="submit"
+            className="px-3 py-2 bg-violet-600 hover:bg-violet-500 rounded-lg text-sm transition-colors text-white"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleAddTask} className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <input
+            type="text"
+            value={newTask}
+            onChange={(e) => setNewTask(e.target.value)}
+            placeholder="添加任务..."
+            className="flex-1 bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+          />
+          <button
+            type="submit"
+            className="px-3 py-2 bg-violet-600 hover:bg-violet-500 rounded-lg text-sm transition-colors text-white"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </form>
+      )}
 
       {/* Status Quick Change */}
       <div className="flex gap-1 mt-4 pt-4 border-t border-[var(--border)]">
