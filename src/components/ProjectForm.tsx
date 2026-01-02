@@ -3,7 +3,7 @@ import type { Project, ProjectStatus, Priority } from '../types'
 import { PRESET_TAGS } from '../utils/tagAnalyzer'
 import { DatePicker } from './DatePicker'
 import { ConfirmDialog } from './ConfirmDialog'
-import { X, Plus, Globe, MessageCircle, Flag } from 'lucide-react'
+import { X, Plus, Globe, MessageCircle, Flag, Image } from 'lucide-react'
 import gsap from 'gsap'
 
 interface Props {
@@ -14,6 +14,7 @@ interface Props {
     website: string
     twitter: string
     discord: string
+    nftMarket: string
     status: ProjectStatus
     priority: Priority
     tags: string[]
@@ -44,6 +45,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
   const [website, setWebsite] = useState('')
   const [twitter, setTwitter] = useState('')
   const [discord, setDiscord] = useState('')
+  const [nftMarket, setNftMarket] = useState('')
   const [status, setStatus] = useState<ProjectStatus>('active')
   const [priority, setPriority] = useState<Priority>('medium')
   const [tags, setTags] = useState<string[]>([])
@@ -66,6 +68,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
         website !== (project.website || '') ||
         twitter !== extractTwitterUsername(project.twitter || '') ||
         discord !== (project.discord || '') ||
+        nftMarket !== (project.nftMarket || '') ||
         status !== project.status ||
         priority !== (project.priority || 'medium') ||
         JSON.stringify(tags) !== JSON.stringify(project.tags || []) ||
@@ -78,6 +81,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
       name.trim() ||
       description.trim() ||
       website.trim() ||
+      nftMarket.trim() ||
       twitter.trim() ||
       discord.trim() ||
       tags.length > 0 ||
@@ -115,6 +119,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
       setWebsite(project.website || '')
       setTwitter(extractTwitterUsername(project.twitter || ''))
       setDiscord(project.discord || '')
+      setNftMarket(project.nftMarket || '')
       setStatus(project.status)
       setPriority(project.priority || 'medium')
       setTags(project.tags || [])
@@ -139,7 +144,8 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
       description, 
       website, 
       twitter: normalizeTwitter(twitter), 
-      discord, 
+      discord,
+      nftMarket,
       status,
       priority,
       tags,
@@ -206,7 +212,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
           </div>
 
           {/* 第二行：链接 */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <div>
               <label className="block text-xs text-[var(--text-secondary)] mb-1 flex items-center gap-1">
                 <Globe className="w-3 h-3 shrink-0" /> 官网
@@ -244,6 +250,18 @@ export function ProjectForm({ project, onSubmit, onCancel }: Props) {
                 onChange={(e) => setDiscord(e.target.value)}
                 className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
                 placeholder="邀请链接"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[var(--text-secondary)] mb-1 flex items-center gap-1">
+                <Image className="w-3 h-3 shrink-0" /> NFT市场
+              </label>
+              <input
+                type="url"
+                value={nftMarket}
+                onChange={(e) => setNftMarket(e.target.value)}
+                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+                placeholder="OpenSea等"
               />
             </div>
           </div>

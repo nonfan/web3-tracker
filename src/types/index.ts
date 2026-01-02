@@ -24,6 +24,7 @@ export interface Project {
   website?: string
   twitter?: string
   discord?: string
+  nftMarket?: string  // NFT 市场链接
   status: ProjectStatus
   priority: Priority
   tasks: Task[]
