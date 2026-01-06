@@ -10,6 +10,8 @@ export const useStore = create<AppState>()(
       deletedProjects: [],
       tokens: [],
       deletedTokens: [],
+      projectOrder: [],
+      tokenOrder: [],
 
       addProject: (projectData) => {
         const now = Date.now()
@@ -23,7 +25,14 @@ export const useStore = create<AppState>()(
           createdAt: now,
           updatedAt: now,
         }
-        set((state) => ({ projects: [...state.projects, project] }))
+        set((state) => ({ 
+          projects: [...state.projects, project],
+          projectOrder: [...state.projectOrder, project.id]
+        }))
+      },
+
+      reorderProjects: (newOrder: string[]) => {
+        set({ projectOrder: newOrder })
       },
 
       updateProject: (id, updates) => {
@@ -41,6 +50,7 @@ export const useStore = create<AppState>()(
           return {
             projects: state.projects.filter((p) => p.id !== id),
             deletedProjects: [...state.deletedProjects, { ...project, updatedAt: Date.now() }],
+            projectOrder: state.projectOrder.filter((pid) => pid !== id),
           }
         })
       },
@@ -51,6 +61,7 @@ export const useStore = create<AppState>()(
           return {
             projects: state.projects.filter((p) => !ids.includes(p.id)),
             deletedProjects: [...state.deletedProjects, ...toDelete.map(p => ({ ...p, updatedAt: Date.now() }))],
+            projectOrder: state.projectOrder.filter((pid) => !ids.includes(pid)),
           }
         })
       },
@@ -62,6 +73,7 @@ export const useStore = create<AppState>()(
           return {
             deletedProjects: state.deletedProjects.filter((p) => p.id !== id),
             projects: [...state.projects, { ...project, updatedAt: Date.now() }],
+            projectOrder: [...state.projectOrder, id],
           }
         })
       },
@@ -177,7 +189,14 @@ export const useStore = create<AppState>()(
           createdAt: now,
           updatedAt: now,
         }
-        set((state) => ({ tokens: [...state.tokens, token] }))
+        set((state) => ({ 
+          tokens: [...state.tokens, token],
+          tokenOrder: [...state.tokenOrder, token.id]
+        }))
+      },
+
+      reorderTokens: (newOrder: string[]) => {
+        set({ tokenOrder: newOrder })
       },
 
       updateToken: (id, updates) => {
@@ -195,6 +214,7 @@ export const useStore = create<AppState>()(
           return {
             tokens: state.tokens.filter((t) => t.id !== id),
             deletedTokens: [...state.deletedTokens, { ...token, updatedAt: Date.now() }],
+            tokenOrder: state.tokenOrder.filter((tid) => tid !== id),
           }
         })
       },
@@ -205,6 +225,7 @@ export const useStore = create<AppState>()(
           return {
             tokens: state.tokens.filter((t) => !ids.includes(t.id)),
             deletedTokens: [...state.deletedTokens, ...toDelete.map(t => ({ ...t, updatedAt: Date.now() }))],
+            tokenOrder: state.tokenOrder.filter((tid) => !ids.includes(tid)),
           }
         })
       },
@@ -224,6 +245,7 @@ export const useStore = create<AppState>()(
           return {
             deletedTokens: state.deletedTokens.filter((t) => t.id !== id),
             tokens: [...state.tokens, { ...token, updatedAt: Date.now() }],
+            tokenOrder: [...state.tokenOrder, id],
           }
         })
       },
@@ -322,11 +344,17 @@ export const useStore = create<AppState>()(
               }
             })
             
+            // 初始化排序数组
+            const projectOrder = data.projectOrder || migratedProjects.map((p: Project) => p.id)
+            const tokenOrder = data.tokenOrder || migratedTokens.map((t: Token) => t.id)
+            
             set({ 
               projects: migratedProjects,
               deletedProjects: data.deletedProjects || [],
               tokens: migratedTokens,
               deletedTokens: data.deletedTokens || [],
+              projectOrder,
+              tokenOrder,
             })
             return true
           }

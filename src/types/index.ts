@@ -91,6 +91,8 @@ export interface AppState {
   deletedProjects: Project[]  // 回收站
   tokens: Token[]  // 代币列表
   deletedTokens: Token[]  // 代币回收站
+  projectOrder: string[]  // 项目排序
+  tokenOrder: string[]  // 代币排序
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateProject: (id: string, updates: Partial<Project>) => void
   deleteProject: (id: string) => void
@@ -99,6 +101,7 @@ export interface AppState {
   restoreProject: (id: string) => void  // 恢复项目
   permanentDeleteProject: (id: string) => void  // 永久删除
   clearTrash: () => void  // 清空回收站
+  reorderProjects: (newOrder: string[]) => void  // 重新排序项目
   addTask: (projectId: string, title: string) => void
   toggleTask: (projectId: string, taskId: string) => void
   deleteTask: (projectId: string, taskId: string) => void
@@ -113,6 +116,7 @@ export interface AppState {
   restoreToken: (id: string) => void
   permanentDeleteToken: (id: string) => void
   clearTokenTrash: () => void
+  reorderTokens: (newOrder: string[]) => void  // 重新排序代币
   addTokenInvestment: (tokenId: string, investment: Omit<TokenInvestment, 'id'>) => void
   addTokenPrice: (tokenId: string, price: TokenPricePoint) => void
   exportData: () => string

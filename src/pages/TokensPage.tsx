@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { ProjectCard } from '../components/ProjectCard'
 import { ProjectForm } from '../components/ProjectForm'
@@ -9,23 +9,92 @@ import type { Token, TokenStatus } from '../types'
 import { Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc, BarChart3, Archive, ArchiveX } from 'lucide-react'
 import { Dropdown } from '../components/Dropdown'
 import { Tooltip } from '../components/Tooltip'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 type FilterStatus = TokenStatus | 'all'
-type SortBy = 'created' | 'updated' | 'name'
+type SortBy = 'created' | 'updated' | 'name' | 'custom'
+
+// Sortable Card Wrapper
+function SortableCard({ token, onEdit, onArchive, selectionMode, selected, onSelect }: {
+  token: Token
+  onEdit: () => void
+  onArchive: (archived: boolean) => void
+  selectionMode: boolean
+  selected: boolean
+  onSelect: (id: string) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: token.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="break-inside-avoid">
+      <ProjectCard
+        project={token as any}
+        onEdit={onEdit}
+        onArchive={onArchive}
+        selectionMode={selectionMode}
+        selected={selected}
+        onSelect={onSelect}
+      />
+    </div>
+  )
+}
 
 export function TokensPage() {
-  const { tokens, addToken, updateToken } = useStore()
+  const { tokens, tokenOrder, addToken, updateToken, reorderTokens } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [editingToken, setEditingToken] = useState<Token | undefined>()
   const [filter, setFilter] = useState<FilterStatus>('all')
   const [search, setSearch] = useState('')
   const [tagFilter, setTagFilter] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<SortBy>('created')
+  const [sortBy, setSortBy] = useState<SortBy>('custom')
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   const [archiveToast, setArchiveToast] = useState(false)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // 初始化排序数组
+  useEffect(() => {
+    if (tokenOrder.length === 0 && tokens.length > 0) {
+      reorderTokens(tokens.map(t => t.id))
+    }
+  }, [tokens, tokenOrder, reorderTokens])
 
   // 获取所有标签
   const allTags = useMemo(() => {
@@ -41,7 +110,7 @@ export function TokensPage() {
   }, [tokens])
 
   const filteredTokens = useMemo(() => {
-    return tokens
+    let result = tokens
       .filter((t) => {
         // 归档筛选
         if (showArchived) return t.status === 'archived'
@@ -51,7 +120,21 @@ export function TokensPage() {
       })
       .filter((t) => t.name.toLowerCase().includes(search.toLowerCase()) || t.symbol.toLowerCase().includes(search.toLowerCase()))
       .filter((t) => !tagFilter || t.tags.includes(tagFilter))
-      .sort((a, b) => {
+
+    // 排序
+    if (sortBy === 'custom') {
+      // 使用自定义排序
+      result = result.sort((a, b) => {
+        const aIndex = tokenOrder.indexOf(a.id)
+        const bIndex = tokenOrder.indexOf(b.id)
+        if (aIndex === -1 && bIndex === -1) return 0
+        if (aIndex === -1) return 1
+        if (bIndex === -1) return -1
+        return aIndex - bIndex
+      })
+    } else {
+      // 使用其他排序方式
+      result = result.sort((a, b) => {
         switch (sortBy) {
           case 'updated':
             return b.updatedAt - a.updatedAt
@@ -62,7 +145,30 @@ export function TokensPage() {
             return b.createdAt - a.createdAt
         }
       })
-  }, [tokens, filter, search, tagFilter, sortBy, showArchived])
+    }
+
+    return result
+  }, [tokens, filter, search, tagFilter, sortBy, showArchived, tokenOrder])
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = filteredTokens.findIndex((t) => t.id === active.id)
+      const newIndex = filteredTokens.findIndex((t) => t.id === over.id)
+
+      const newOrder = arrayMove(filteredTokens, oldIndex, newIndex).map(t => t.id)
+
+      // 更新完整的排序数组
+      const updatedOrder = tokenOrder.filter(id => !newOrder.includes(id))
+      reorderTokens([...newOrder, ...updatedOrder])
+
+      // 切换到自定义排序
+      if (sortBy !== 'custom') {
+        setSortBy('custom')
+      }
+    }
+  }
 
   const stats = {
     total: tokens.filter(t => t.status !== 'archived').length,
@@ -258,6 +364,7 @@ export function TokensPage() {
             onChange={(v) => setSortBy(v as SortBy)}
             icon={<SortAsc className="w-4 h-4 text-[var(--text-muted)]" />}
             options={[
+              { value: 'custom', label: '自定义排序' },
               { value: 'created', label: '创建时间' },
               { value: 'updated', label: '最近更新' },
               { value: 'name', label: '名称' },
@@ -367,28 +474,38 @@ export function TokensPage() {
 
       {/* Projects Grid - 瀑布流布局 */}
       {filteredTokens.length > 0 ? (
-        <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-          {filteredTokens.map((token) => (
-            <div key={token.id} className="break-inside-avoid">
-              <ProjectCard
-                project={token as any}
-                onEdit={() => {
-                  setEditingToken(token)
-                  setShowForm(true)
-                }}
-                onArchive={(archived) => {
-                  if (archived && !showArchived) {
-                    setArchiveToast(true)
-                    setTimeout(() => setArchiveToast(false), 3000)
-                  }
-                }}
-                selectionMode={selectionMode}
-                selected={selectedIds.includes(token.id)}
-                onSelect={toggleSelection}
-              />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={filteredTokens.map(t => t.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+              {filteredTokens.map((token) => (
+                <SortableCard
+                  key={token.id}
+                  token={token}
+                  onEdit={() => {
+                    setEditingToken(token)
+                    setShowForm(true)
+                  }}
+                  onArchive={(archived) => {
+                    if (archived && !showArchived) {
+                      setArchiveToast(true)
+                      setTimeout(() => setArchiveToast(false), 3000)
+                    }
+                  }}
+                  selectionMode={selectionMode}
+                  selected={selectedIds.includes(token.id)}
+                  onSelect={toggleSelection}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       ) : (
         <div className="text-center py-16">
           {tokens.length === 0 ? (

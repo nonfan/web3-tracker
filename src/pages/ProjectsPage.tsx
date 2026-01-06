@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { ProjectCard } from '../components/ProjectCard'
 import { ProjectForm } from '../components/ProjectForm'
@@ -11,26 +11,95 @@ import type { Project, ProjectStatus, Priority } from '../types'
 import { Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc, BarChart3, Archive, ArchiveX, ChevronDown } from 'lucide-react'
 import { Dropdown } from '../components/Dropdown'
 import { Tooltip } from '../components/Tooltip'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 type FilterStatus = ProjectStatus | 'all'
-type SortBy = 'created' | 'updated' | 'priority' | 'deadline' | 'name'
+type SortBy = 'created' | 'updated' | 'priority' | 'deadline' | 'name' | 'custom'
 
 const priorityOrder: Record<Priority, number> = { high: 0, medium: 1, low: 2 }
 
+// Sortable Card Wrapper
+function SortableCard({ project, onEdit, onArchive, selectionMode, selected, onSelect }: {
+  project: Project
+  onEdit: () => void
+  onArchive: (archived: boolean) => void
+  selectionMode: boolean
+  selected: boolean
+  onSelect: (id: string) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: project.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="break-inside-avoid">
+      <ProjectCard
+        project={project}
+        onEdit={onEdit}
+        onArchive={onArchive}
+        selectionMode={selectionMode}
+        selected={selected}
+        onSelect={onSelect}
+      />
+    </div>
+  )
+}
+
 export function ProjectsPage() {
-  const { projects, addProject, updateProject } = useStore()
+  const { projects, projectOrder, addProject, updateProject, reorderProjects } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | undefined>()
   const [filter, setFilter] = useState<FilterStatus>('all')
   const [search, setSearch] = useState('')
   const [tagFilter, setTagFilter] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<SortBy>('created')
+  const [sortBy, setSortBy] = useState<SortBy>('custom')
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   const [archiveToast, setArchiveToast] = useState(false)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // 初始化排序数组
+  useEffect(() => {
+    if (projectOrder.length === 0 && projects.length > 0) {
+      reorderProjects(projects.map(p => p.id))
+    }
+  }, [projects, projectOrder, reorderProjects])
 
   // 获取所有标签
   const allTags = useMemo(() => {
@@ -46,7 +115,7 @@ export function ProjectsPage() {
   }, [projects])
 
   const filteredProjects = useMemo(() => {
-    return projects
+    let result = projects
       .filter((p) => {
         // 归档筛选
         if (showArchived) return p.status === 'archived'
@@ -56,7 +125,21 @@ export function ProjectsPage() {
       })
       .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
       .filter((p) => !tagFilter || p.tags.includes(tagFilter))
-      .sort((a, b) => {
+
+    // 排序
+    if (sortBy === 'custom') {
+      // 使用自定义排序
+      result = result.sort((a, b) => {
+        const aIndex = projectOrder.indexOf(a.id)
+        const bIndex = projectOrder.indexOf(b.id)
+        if (aIndex === -1 && bIndex === -1) return 0
+        if (aIndex === -1) return 1
+        if (bIndex === -1) return -1
+        return aIndex - bIndex
+      })
+    } else {
+      // 使用其他排序方式
+      result = result.sort((a, b) => {
         switch (sortBy) {
           case 'updated':
             return b.updatedAt - a.updatedAt
@@ -74,7 +157,30 @@ export function ProjectsPage() {
             return b.createdAt - a.createdAt
         }
       })
-  }, [projects, filter, search, tagFilter, sortBy, showArchived])
+    }
+
+    return result
+  }, [projects, filter, search, tagFilter, sortBy, showArchived, projectOrder])
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = filteredProjects.findIndex((p) => p.id === active.id)
+      const newIndex = filteredProjects.findIndex((p) => p.id === over.id)
+
+      const newOrder = arrayMove(filteredProjects, oldIndex, newIndex).map(p => p.id)
+
+      // 更新完整的排序数组
+      const updatedOrder = projectOrder.filter(id => !newOrder.includes(id))
+      reorderProjects([...newOrder, ...updatedOrder])
+
+      // 切换到自定义排序
+      if (sortBy !== 'custom') {
+        setSortBy('custom')
+      }
+    }
+  }
 
   const stats = {
     total: projects.filter(p => p.status !== 'archived').length,
@@ -176,6 +282,7 @@ export function ProjectsPage() {
             onChange={(v) => setSortBy(v as SortBy)}
             icon={<SortAsc className="w-4 h-4 text-[var(--text-muted)]" />}
             options={[
+              { value: 'custom', label: '自定义排序' },
               { value: 'created', label: '创建时间' },
               { value: 'updated', label: '最近更新' },
               { value: 'priority', label: '优先级' },
@@ -295,28 +402,38 @@ export function ProjectsPage() {
 
       {/* Projects Grid - 瀑布流布局 */}
       {filteredProjects.length > 0 ? (
-        <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-          {filteredProjects.map((project) => (
-            <div key={project.id} className="break-inside-avoid">
-              <ProjectCard
-                project={project}
-                onEdit={() => {
-                  setEditingProject(project)
-                  setShowForm(true)
-                }}
-                onArchive={(archived) => {
-                  if (archived && !showArchived) {
-                    setArchiveToast(true)
-                    setTimeout(() => setArchiveToast(false), 3000)
-                  }
-                }}
-                selectionMode={selectionMode}
-                selected={selectedIds.includes(project.id)}
-                onSelect={toggleSelection}
-              />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={filteredProjects.map(p => p.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+              {filteredProjects.map((project) => (
+                <SortableCard
+                  key={project.id}
+                  project={project}
+                  onEdit={() => {
+                    setEditingProject(project)
+                    setShowForm(true)
+                  }}
+                  onArchive={(archived) => {
+                    if (archived && !showArchived) {
+                      setArchiveToast(true)
+                      setTimeout(() => setArchiveToast(false), 3000)
+                    }
+                  }}
+                  selectionMode={selectionMode}
+                  selected={selectedIds.includes(project.id)}
+                  onSelect={toggleSelection}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       ) : (
         <div className="text-center py-16">
           {projects.length === 0 ? (
