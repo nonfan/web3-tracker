@@ -1,13 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
-import type { AppState, Project, TransactionType } from '../types'
+import type { AppState, Project, TransactionType, Token } from '../types'
 
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       projects: [],
       deletedProjects: [],
+      tokens: [],
+      deletedTokens: [],
 
       addProject: (projectData) => {
         const now = Date.now()
@@ -160,9 +162,117 @@ export const useStore = create<AppState>()(
         }))
       },
 
+      // 代币管理
+      addToken: (tokenData) => {
+        const now = Date.now()
+        const token: Token = {
+          ...tokenData,
+          id: uuidv4(),
+          status: tokenData.status || 'active',
+          tags: tokenData.tags || [],
+          tasks: tokenData.tasks || [],
+          transactions: tokenData.transactions || [],
+          investments: tokenData.investments || [],
+          priceHistory: tokenData.priceHistory || [],
+          createdAt: now,
+          updatedAt: now,
+        }
+        set((state) => ({ tokens: [...state.tokens, token] }))
+      },
+
+      updateToken: (id, updates) => {
+        set((state) => ({
+          tokens: state.tokens.map((t) =>
+            t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t
+          ),
+        }))
+      },
+
+      deleteToken: (id) => {
+        set((state) => {
+          const token = state.tokens.find((t) => t.id === id)
+          if (!token) return state
+          return {
+            tokens: state.tokens.filter((t) => t.id !== id),
+            deletedTokens: [...state.deletedTokens, { ...token, updatedAt: Date.now() }],
+          }
+        })
+      },
+
+      deleteTokens: (ids) => {
+        set((state) => {
+          const toDelete = state.tokens.filter((t) => ids.includes(t.id))
+          return {
+            tokens: state.tokens.filter((t) => !ids.includes(t.id)),
+            deletedTokens: [...state.deletedTokens, ...toDelete.map(t => ({ ...t, updatedAt: Date.now() }))],
+          }
+        })
+      },
+
+      updateTokens: (ids, updates) => {
+        set((state) => ({
+          tokens: state.tokens.map((t) =>
+            ids.includes(t.id) ? { ...t, ...updates, updatedAt: Date.now() } : t
+          ),
+        }))
+      },
+
+      restoreToken: (id) => {
+        set((state) => {
+          const token = state.deletedTokens.find((t) => t.id === id)
+          if (!token) return state
+          return {
+            deletedTokens: state.deletedTokens.filter((t) => t.id !== id),
+            tokens: [...state.tokens, { ...token, updatedAt: Date.now() }],
+          }
+        })
+      },
+
+      permanentDeleteToken: (id) => {
+        set((state) => ({
+          deletedTokens: state.deletedTokens.filter((t) => t.id !== id),
+        }))
+      },
+
+      clearTokenTrash: () => {
+        set({ deletedTokens: [] })
+      },
+
+      addTokenInvestment: (tokenId, investment) => {
+        set((state) => ({
+          tokens: state.tokens.map((t) =>
+            t.id === tokenId
+              ? {
+                  ...t,
+                  investments: [
+                    ...t.investments,
+                    { ...investment, id: uuidv4() },
+                  ],
+                  updatedAt: Date.now(),
+                }
+              : t
+          ),
+        }))
+      },
+
+      addTokenPrice: (tokenId, price) => {
+        set((state) => ({
+          tokens: state.tokens.map((t) =>
+            t.id === tokenId
+              ? {
+                  ...t,
+                  priceHistory: [...t.priceHistory, price],
+                  currentPrice: price.price,
+                  updatedAt: Date.now(),
+                }
+              : t
+          ),
+        }))
+      },
+
       exportData: () => {
-        const { projects, deletedProjects } = get()
-        return JSON.stringify({ projects, deletedProjects, exportedAt: Date.now() }, null, 2)
+        const { projects, deletedProjects, tokens, deletedTokens } = get()
+        return JSON.stringify({ projects, deletedProjects, tokens, deletedTokens, exportedAt: Date.now() }, null, 2)
       },
 
       importData: (json) => {
@@ -195,9 +305,28 @@ export const useStore = create<AppState>()(
               }
               return p
             })
+            
+            // 兼容旧代币数据：确保 tags 和 status 字段存在，并迁移旧状态
+            const migratedTokens = (data.tokens || []).map((t: any) => {
+              let status = t.status || 'active'
+              // 迁移旧状态名称
+              if (status === 'holding') status = 'active'
+              if (status === 'sold') status = 'completed'
+              if (status === 'zero') status = 'dead'
+              return {
+                ...t,
+                status,
+                tags: t.tags || [],
+                tasks: t.tasks || [],
+                transactions: t.transactions || [],
+              }
+            })
+            
             set({ 
               projects: migratedProjects,
               deletedProjects: data.deletedProjects || [],
+              tokens: migratedTokens,
+              deletedTokens: data.deletedTokens || [],
             })
             return true
           }
