@@ -92,8 +92,7 @@ export function ProjectsPage() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 50, // 50ms 延迟，快速响应
-        tolerance: 5, // 5px 容差，防止轻微移动触发拖拽
+        distance: 8, // 移动 8px 后才激活拖拽，点击不会触发
       },
     }),
     useSensor(KeyboardSensor, {
