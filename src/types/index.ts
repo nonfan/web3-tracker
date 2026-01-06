@@ -57,6 +57,7 @@ export interface Token {
   investments: TokenInvestment[]  // 投资记录
   priceHistory: TokenPricePoint[]  // 价格历史
   currentPrice?: number  // 当前价格
+  lastPriceUpdate?: number  // 最后价格更新时间
   deadline?: number  // 截止日期（兼容 ProjectCard）
   notes: string
   createdAt: number

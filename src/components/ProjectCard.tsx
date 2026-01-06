@@ -302,35 +302,38 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
 
   // 手动刷新价格数据
   const handleRefreshPrice = async () => {
-    if (!isToken || !('coingeckoId' in project)) {
-      console.log('无法刷新: 不是代币或没有 coingeckoId')
+    if (!isToken || isRefreshingPrice) return
+
+    const coinGeckoId = (project as any).coingeckoId
+    if (!coinGeckoId) {
+      // 没有 coingeckoId，打开导入器
+      setShowPriceImporter(true)
       return
     }
 
-    const coinGeckoId = (project as any).coingeckoId
-    console.log('开始刷新价格数据:', coinGeckoId)
     setIsRefreshingPrice(true)
-
     try {
-      console.log('正在获取价格历史...')
+      // 获取最新价格数据（365天）
       const priceHistory = await getTokenPriceHistory(coinGeckoId, 365)
-      console.log('价格历史获取成功:', priceHistory.length, '条数据')
 
-      console.log('正在获取代币信息...')
-      const tokenInfo = await getTokenInfo(coinGeckoId)
-      console.log('代币信息获取成功:', tokenInfo)
+      if (priceHistory && priceHistory.length > 0) {
+        // 获取当前价格
+        const currentPrice = priceHistory[priceHistory.length - 1]?.price || 0
 
-      // 保存到缓存
-      if (tokenInfo?.currentPrice) {
-        setCachedPriceData(coinGeckoId, 365, priceHistory, tokenInfo.currentPrice)
-        console.log('已保存到缓存')
+        // 更新缓存
+        setCachedPriceData(coinGeckoId, 365, priceHistory, currentPrice)
+
+        // 更新项目数据
+        updateToken(project.id, {
+          currentPrice,
+          lastPriceUpdate: Date.now(),
+          priceHistory
+        })
+
+        console.log('价格数据已刷新')
       }
-
-      handleImportPriceData(coinGeckoId, priceHistory, tokenInfo?.currentPrice)
-      console.log('刷新完成')
     } catch (error) {
       console.error('刷新价格失败:', error)
-      alert('刷新价格失败，请稍后重试')
     } finally {
       setIsRefreshingPrice(false)
     }
@@ -410,6 +413,21 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
         </div>
         {!selectionMode && (
           <div className={`flex gap-1 transition-opacity ${showTransactionPanel || showDeleteConfirm ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+            {/* 代币价格更新按钮 */}
+            {isToken && (
+              <Tooltip content={isRefreshingPrice ? "更新中..." : "刷新价格数据"}>
+                <button
+                  onClick={handleRefreshPrice}
+                  disabled={isRefreshingPrice}
+                  className={`p-2 rounded-lg transition-colors ${isRefreshingPrice
+                    ? 'bg-blue-500/20 text-blue-400 cursor-not-allowed'
+                    : 'hover:bg-blue-500/10 text-[var(--text-muted)] hover:text-blue-400'
+                    }`}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshingPrice ? 'animate-spin' : ''}`} />
+                </button>
+              </Tooltip>
+            )}
             <Tooltip content="记录收益">
               <button
                 ref={profitButtonRef}
