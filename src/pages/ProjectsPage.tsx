@@ -92,7 +92,7 @@ export function ProjectsPage() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 250, // 250ms 延迟，长按才能拖拽
+        delay: 150, // 150ms 延迟，平衡拖拽和点击
         tolerance: 5, // 5px 容差，防止轻微移动触发拖拽
       },
     }),
