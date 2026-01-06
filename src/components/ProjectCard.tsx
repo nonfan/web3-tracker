@@ -25,6 +25,7 @@ interface Props {
   selected?: boolean
   onSelect?: (id: string) => void
   selectionMode?: boolean
+  dragHandleProps?: any
 }
 
 function formatDeadline(timestamp: number): { text: string; urgent: boolean } {
@@ -40,7 +41,7 @@ function formatDeadline(timestamp: number): { text: string; urgent: boolean } {
   return { text: new Date(timestamp).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }), urgent: false }
 }
 
-export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, selectionMode }: Props) {
+export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, selectionMode, dragHandleProps }: Props) {
   const [newTask, setNewTask] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showTransactionPanel, setShowTransactionPanel] = useState(false)
@@ -344,8 +345,9 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
 
   return (
     <div
+      {...dragHandleProps}
       className={`bg-[var(--card-bg)] rounded-2xl p-5 border transition-all group ${selected ? 'border-violet-500 ring-2 ring-violet-500/20' : 'border-[var(--border)] hover:border-[var(--border-hover)]'
-        }`}
+        } ${dragHandleProps ? 'cursor-grab active:cursor-grabbing' : ''}`}
       onClick={() => selectionMode && onSelect?.(project.id)}
     >
       {/* Header */}

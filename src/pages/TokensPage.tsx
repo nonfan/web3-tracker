@@ -46,6 +46,7 @@ function SortableCard({ token, onEdit, onArchive, selectionMode, selected, onSel
     transform,
     transition,
     isDragging,
+    setActivatorNodeRef,
   } = useSortable({ id: token.id })
 
   const style = {
@@ -55,7 +56,7 @@ function SortableCard({ token, onEdit, onArchive, selectionMode, selected, onSel
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="break-inside-avoid">
+    <div ref={setNodeRef} style={style} className="break-inside-avoid">
       <ProjectCard
         project={token as any}
         onEdit={onEdit}
@@ -63,6 +64,7 @@ function SortableCard({ token, onEdit, onArchive, selectionMode, selected, onSel
         selectionMode={selectionMode}
         selected={selected}
         onSelect={onSelect}
+        dragHandleProps={{ ref: setActivatorNodeRef, ...attributes, ...listeners }}
       />
     </div>
   )
@@ -83,7 +85,12 @@ export function TokensPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 250, // 250ms 延迟，长按才能拖拽
+        tolerance: 5, // 5px 容差，防止轻微移动触发拖拽
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
