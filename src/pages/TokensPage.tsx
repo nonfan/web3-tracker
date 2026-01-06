@@ -87,7 +87,7 @@ export function TokensPage() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 150, // 150ms 延迟，平衡拖拽和点击
+        delay: 50, // 50ms 延迟，快速响应
         tolerance: 5, // 5px 容差，防止轻微移动触发拖拽
       },
     }),
