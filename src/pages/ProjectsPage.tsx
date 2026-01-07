@@ -28,6 +28,7 @@ import {
 } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { restrictToWindowEdges } from '@dnd-kit/modifiers'
 
 type FilterStatus = ProjectStatus | 'all'
 type SortBy = 'created' | 'updated' | 'priority' | 'deadline' | 'name' | 'custom'
@@ -412,6 +413,7 @@ export function ProjectsPage() {
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
+          modifiers={[restrictToWindowEdges]}
         >
           <SortableContext
             items={filteredProjects.map(p => p.id)}

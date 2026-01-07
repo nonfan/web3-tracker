@@ -26,6 +26,7 @@ import {
 } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { restrictToWindowEdges } from '@dnd-kit/modifiers'
 
 type FilterStatus = TokenStatus | 'all'
 type SortBy = 'created' | 'updated' | 'name' | 'custom'
@@ -484,6 +485,7 @@ export function TokensPage() {
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
+          modifiers={[restrictToWindowEdges]}
         >
           <SortableContext
             items={filteredTokens.map(t => t.id)}

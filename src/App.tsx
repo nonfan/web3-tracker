@@ -11,7 +11,7 @@ import { Tooltip } from './components/Tooltip'
 import { LogoWithText } from './components/LogoWithText'
 import { requestNotificationPermission, sendNotification, checkDeadlines, shouldNotifyToday, markNotified } from './utils/notifications'
 import { cleanExpiredCache } from './utils/priceDataCache'
-import { Bell, BellOff, Coins, FolderKanban } from 'lucide-react'
+import { Bell, BellOff, Coins, FolderKanban, TrendingUp } from 'lucide-react'
 
 function App() {
   const { projects } = useStore()
@@ -98,6 +98,16 @@ function App() {
               >
                 <Coins className="w-4 h-4" />
                 <span>Tokens</span>
+              </Link>
+              <Link
+                to="/economy"
+                className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${location.pathname === '/economy'
+                  ? 'bg-[var(--card-bg)] text-[var(--text-primary)] shadow-lg border border-[var(--border-hover)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                  }`}
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span>Economy</span>
               </Link>
             </nav>
 
