@@ -130,17 +130,31 @@ export async function getFedRateData(): Promise<FedRateData[]> {
 
 /**
  * 获取通胀率数据
+ * 注意：如果 Gist 中存储的是 CPI 指数值（>100），会自动计算通胀率
  */
 export async function getInflationData(): Promise<EconomicDataPoint[]> {
   try {
     const gistData = await fetchFromGist()
     
     if (gistData?.inflation && gistData.inflation.length > 0) {
-      return gistData.inflation.map((item: any) => ({
+      const rawData = gistData.inflation.map((item: any) => ({
         date: item.date,
         value: item.value,
         source: 'FRED'
       }))
+      
+      // 检查数据是否是 CPI 指数值（通常 > 100）还是通胀率（通常 < 20）
+      const firstValue = rawData[0].value
+      
+      if (firstValue > 100) {
+        // 数据是 CPI 指数，需要计算通胀率
+        console.warn('⚠️ Gist contains CPI index values, calculating inflation rates...')
+        return calculateInflationRatesFromCPI(rawData)
+      }
+      
+      // 数据已经是通胀率
+      console.log('✅ Using inflation rate data from Gist')
+      return rawData
     }
     
     console.log('⚠️ No inflation data available from Gist')
@@ -149,6 +163,31 @@ export async function getInflationData(): Promise<EconomicDataPoint[]> {
     console.error('Error fetching inflation data:', error)
     return []
   }
+}
+
+/**
+ * 从 CPI 指数计算通胀率（Year-over-Year）
+ */
+function calculateInflationRatesFromCPI(cpiData: EconomicDataPoint[]): EconomicDataPoint[] {
+  const inflationRates: EconomicDataPoint[] = []
+  
+  // 需要至少 13 个月的数据
+  for (let i = 12; i < cpiData.length; i++) {
+    const current = cpiData[i]
+    const yearAgo = cpiData[i - 12]
+    
+    // 计算同比通胀率
+    const inflationRate = ((current.value - yearAgo.value) / yearAgo.value) * 100
+    
+    inflationRates.push({
+      date: current.date,
+      value: parseFloat(inflationRate.toFixed(2)),
+      source: current.source
+    })
+  }
+  
+  console.log(`📊 Calculated ${inflationRates.length} inflation rate data points from CPI index`)
+  return inflationRates
 }
 
 /**
