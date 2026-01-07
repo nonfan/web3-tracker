@@ -107,27 +107,27 @@ export function InflationChart() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">美国通胀率走势（CPI）</h2>
+        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">美国通胀率走势（YoY）</h2>
         <p className="text-sm text-[var(--text-secondary)]">
-          消费者物价指数反映购买力变化，美联储目标为2%
+          基于 CPI 指数计算的同比通胀率，美联储目标为 2%
         </p>
       </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
-          <div className="text-xs text-[var(--text-muted)] mb-1">当前通胀</div>
-          <div className="text-2xl font-bold text-amber-400">{currentRate}%</div>
+          <div className="text-xs text-[var(--text-muted)] mb-1">当前通胀率</div>
+          <div className="text-2xl font-bold text-amber-400">{currentRate.toFixed(1)}%</div>
           <div className="text-xs text-[var(--text-muted)] mt-1">{formatDate(currentDate)}</div>
         </div>
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
           <div className="text-xs text-[var(--text-muted)] mb-1">历史峰值</div>
-          <div className="text-2xl font-bold text-red-400">{peakRate}%</div>
+          <div className="text-2xl font-bold text-red-400">{peakRate.toFixed(1)}%</div>
           <div className="text-xs text-[var(--text-muted)] mt-1">{formatDate(peakDate)}</div>
         </div>
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
           <div className="text-xs text-[var(--text-muted)] mb-1">美联储目标</div>
-          <div className="text-2xl font-bold text-emerald-400">{targetRate}%</div>
+          <div className="text-2xl font-bold text-emerald-400">{targetRate.toFixed(1)}%</div>
           <div className="text-xs text-[var(--text-muted)] mt-1">长期目标</div>
         </div>
       </div>
