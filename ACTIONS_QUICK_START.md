@@ -47,6 +47,20 @@ GIST_ID = 你的 Gist ID
 GIST_TOKEN = 你的 GitHub Token
 ```
 
+**⚠️ 重要提示**:
+- 直接从 FRED 网站复制 API Key
+- 不要从文本编辑器复制（可能包含隐藏字符）
+- 粘贴后不要按回车键，直接点击 "Add secret"
+
+**🧪 可选：本地测试 API Key**
+```bash
+# Windows
+set FRED_API_KEY=your_key && node scripts/test-fred-api.js
+
+# Linux/Mac
+FRED_API_KEY=your_key node scripts/test-fred-api.js
+```
+
 ---
 
 ### 第三步：运行并验证（1分钟）
@@ -96,6 +110,23 @@ GIST_TOKEN = 你的 GitHub Token
 
 ## ❌ 常见错误
 
+### "FRED API error: 400"
+**最常见原因**: API Key 格式错误或无效
+
+**解决方案**:
+1. 确保 API Key 是 32 位十六进制字符串
+2. 检查复制时是否有多余空格或换行符
+3. 删除并重新添加 `FRED_API_KEY` Secret
+4. 等待 5-10 分钟让新 API Key 激活
+
+**快速测试**:
+```bash
+# 在浏览器中测试（替换 YOUR_API_KEY）
+https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=YOUR_API_KEY&file_type=json&limit=1
+```
+
+详细排查: [FRED_API_TROUBLESHOOTING.md](./FRED_API_TROUBLESHOOTING.md)
+
 ### "Invalid FRED API key"
 → 检查 `FRED_API_KEY` Secret 是否正确
 
@@ -111,6 +142,7 @@ GIST_TOKEN = 你的 GitHub Token
 
 需要更多帮助？查看：
 - [完整配置指南](./GITHUB_ACTIONS_GUIDE.md)
+- [FRED API 排查指南](./FRED_API_TROUBLESHOOTING.md) ⭐ 400 错误必看
 - [FRED API 设置](./FRED_API_SETUP.md)
 - [数据准确性说明](./DATA_ACCURACY_NOTICE.md)
 

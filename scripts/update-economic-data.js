@@ -6,9 +6,10 @@
  * 获取免费 API Key：https://fred.stlouisfed.org/docs/api/api_key.html
  */
 
-const FRED_API_KEY = process.env.FRED_API_KEY
-const GIST_TOKEN = process.env.GIST_TOKEN
-const GIST_ID = process.env.GIST_ID
+// 获取环境变量并清理可能的空格/换行符
+const FRED_API_KEY = process.env.FRED_API_KEY?.trim()
+const GIST_TOKEN = process.env.GIST_TOKEN?.trim()
+const GIST_ID = process.env.GIST_ID?.trim()
 
 const FRED_API_BASE = 'https://api.stlouisfed.org/fred'
 
@@ -33,14 +34,27 @@ async function fetchFredSeries(seriesId, seriesName) {
     const url = `${FRED_API_BASE}/series/observations?series_id=${seriesId}&api_key=${FRED_API_KEY}&file_type=json&observation_start=${startDateStr}&observation_end=${endDateStr}`
     
     console.log(`Fetching ${seriesName} (${seriesId})...`)
+    console.log(`URL: ${url.replace(FRED_API_KEY, '***API_KEY***')}`)
     
     const response = await fetch(url)
     
+    console.log(`Response status: ${response.status} ${response.statusText}`)
+    
     if (!response.ok) {
-      throw new Error(`FRED API error: ${response.status}`)
+      // 尝试读取错误响应
+      const errorText = await response.text()
+      console.error(`Error response: ${errorText}`)
+      throw new Error(`FRED API error: ${response.status} - ${errorText}`)
     }
     
     const data = await response.json()
+    
+    // 检查 FRED API 错误消息
+    if (data.error_code) {
+      console.error(`FRED API Error Code: ${data.error_code}`)
+      console.error(`FRED API Error Message: ${data.error_message}`)
+      throw new Error(`FRED API error: ${data.error_message}`)
+    }
     
     if (data.observations && data.observations.length > 0) {
       const processed = processObservations(data.observations, seriesId)
@@ -166,6 +180,13 @@ async function main() {
     console.error('✗ FRED_API_KEY is required')
     console.log('Get your free API key at: https://fred.stlouisfed.org/docs/api/api_key.html')
     process.exit(1)
+  }
+
+  // 验证 API Key 格式（FRED API Key 是32位十六进制字符串）
+  if (FRED_API_KEY.length !== 32 || !/^[a-f0-9]{32}$/i.test(FRED_API_KEY)) {
+    console.warn('⚠️ Warning: FRED API Key format may be incorrect')
+    console.warn('Expected: 32-character hexadecimal string (e.g., abcdef1234567890abcdef1234567890)')
+    console.warn(`Received: ${FRED_API_KEY.length} characters`)
   }
 
   if (!GIST_TOKEN || !GIST_ID) {
