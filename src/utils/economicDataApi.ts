@@ -11,6 +11,7 @@ export interface EconomicDataPoint {
   date: string
   value: number
   source?: string
+  cpiIndex?: number  // 原始 CPI 指数值（如果有）
 }
 
 export interface FedRateData {
@@ -182,7 +183,8 @@ function calculateInflationRatesFromCPI(cpiData: EconomicDataPoint[]): EconomicD
     inflationRates.push({
       date: current.date,
       value: parseFloat(inflationRate.toFixed(2)),
-      source: current.source
+      source: current.source,
+      cpiIndex: current.value  // 保留原始 CPI 指数
     })
   }
   

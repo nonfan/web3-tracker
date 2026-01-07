@@ -97,6 +97,11 @@ export function InflationChart() {
   const peakData = inflationData.find(d => d.value === peakRate)
   const peakDate = peakData ? peakData.date : ''
 
+  // 获取原始 CPI 指数（如果数据是从 CPI 转换来的）
+  // 通过检查第一个值判断原始数据类型
+  const hasCPIIndex = inflationData[0]?.value > 100
+  const currentCPI = hasCPIIndex ? inflationData[inflationData.length - 1].value : null
+
   // 格式化日期显示
   const formatDate = (dateStr: string) => {
     const [year, month] = dateStr.split('-')
@@ -114,7 +119,14 @@ export function InflationChart() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {currentCPI && (
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+            <div className="text-xs text-[var(--text-muted)] mb-1">CPI 指数</div>
+            <div className="text-2xl font-bold text-blue-400">{currentCPI.toFixed(2)}</div>
+            <div className="text-xs text-[var(--text-muted)] mt-1">{formatDate(currentDate)}</div>
+          </div>
+        )}
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
           <div className="text-xs text-[var(--text-muted)] mb-1">当前通胀率</div>
           <div className="text-2xl font-bold text-amber-400">{currentRate.toFixed(1)}%</div>
@@ -175,10 +187,10 @@ export function InflationChart() {
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
           <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">数据说明</h3>
           <div className="space-y-2 text-sm text-[var(--text-secondary)]">
+            <p>• <strong>CPI 指数</strong>：消费者物价指数绝对值（基准年 1982-1984=100）</p>
+            <p>• <strong>通胀率</strong>：CPI 同比变化率（Year-over-Year）</p>
             <p>• 数据来源：美国劳工统计局 (BLS)</p>
-            <p>• 指标：CPI 消费者物价指数同比</p>
             <p>• 更新频率：每月发布，通常有1-2个月延迟</p>
-            <p>• 美联储目标：长期维持在 2% 左右</p>
           </div>
         </div>
 
