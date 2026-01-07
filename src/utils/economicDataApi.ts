@@ -3,6 +3,8 @@
  * 优先从 GitHub Gist 读取 FRED 数据（由 GitHub Actions 自动更新）
  * 降级方案：使用本地备份数据
  * 数据更新时间：每天自动更新
+ * 
+ * 注意：复用项目的 GitHub Token 和 Gist 配置
  */
 
 export interface EconomicDataPoint {
@@ -19,28 +21,64 @@ export interface FedRateData {
   event?: string
 }
 
-// GitHub Gist 配置（用户需要在这里配置自己的 Gist）
-const GIST_CONFIG = {
-  username: getGistUsername() || 'your-github-username',
-  gistId: getGistId() || 'your-gist-id',
-  filename: 'economic-data.json'
+// 经济数据 Gist 配置键（独立于项目数据）
+const ECONOMIC_GIST_CONFIG_KEY = 'web3tracker-economic-gist-config'
+
+interface EconomicGistConfig {
+  gistId: string
+  username: string
+}
+
+/**
+ * 获取经济数据 Gist 配置
+ */
+function getEconomicGistConfig(): EconomicGistConfig | null {
+  const stored = localStorage.getItem(ECONOMIC_GIST_CONFIG_KEY)
+  if (!stored) return null
+  try {
+    return JSON.parse(stored)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 保存经济数据 Gist 配置
+ */
+export function saveEconomicGistConfig(username: string, gistId: string) {
+  localStorage.setItem(ECONOMIC_GIST_CONFIG_KEY, JSON.stringify({ username, gistId }))
+}
+
+/**
+ * 清除经济数据 Gist 配置
+ */
+export function clearEconomicGistConfig() {
+  localStorage.removeItem(ECONOMIC_GIST_CONFIG_KEY)
+}
+
+/**
+ * 获取经济数据 Gist 配置（用于 UI 显示）
+ */
+export function getEconomicGistConfigForUI() {
+  return getEconomicGistConfig()
 }
 
 /**
  * 从 GitHub Gist 获取经济数据
+ * 使用独立的 Gist（不同于项目数据的 Gist）
  */
 async function fetchFromGist() {
-  const { username, gistId, filename } = GIST_CONFIG
+  const config = getEconomicGistConfig()
   
-  // 如果未配置 Gist，直接返回 null
-  if (username === 'your-github-username' || gistId === 'your-gist-id') {
-    console.log('Gist not configured, using local data')
+  // 如果未配置经济数据 Gist，直接返回 null
+  if (!config || !config.username || !config.gistId) {
+    console.log('📊 Economic Gist not configured, using local data')
     return null
   }
   
   try {
-    const url = `https://gist.githubusercontent.com/${username}/${gistId}/raw/${filename}`
-    console.log('Fetching data from Gist:', url)
+    const url = `https://gist.githubusercontent.com/${config.username}/${config.gistId}/raw/economic-data.json`
+    console.log('📊 Fetching economic data from Gist:', url)
     
     const response = await fetch(url, {
       cache: 'no-cache' // 确保获取最新数据
@@ -58,15 +96,15 @@ async function fetchFromGist() {
       const daysSinceUpdate = (Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24)
       
       if (daysSinceUpdate > 7) {
-        console.warn(`Gist data is ${Math.floor(daysSinceUpdate)} days old`)
+        console.warn(`⚠️ Gist data is ${Math.floor(daysSinceUpdate)} days old`)
       } else {
-        console.log(`✓ Using Gist data (updated ${Math.floor(daysSinceUpdate)} days ago)`)
+        console.log(`✅ Using Gist data (updated ${Math.floor(daysSinceUpdate)} days ago)`)
       }
     }
     
     return data.data
   } catch (error) {
-    console.error('Error fetching from Gist:', error)
+    console.error('❌ Error fetching from Gist:', error)
     return null
   }
 }
@@ -308,31 +346,7 @@ function getBackupCryptoData() {
   ]
 }
 
-// Gist 配置管理
-function getGistUsername(): string | null {
-  return localStorage.getItem('gist_username')
-}
-
-function getGistId(): string | null {
-  return localStorage.getItem('gist_id')
-}
-
-export function saveGistConfig(username: string, gistId: string) {
-  localStorage.setItem('gist_username', username)
-  localStorage.setItem('gist_id', gistId)
-}
-
-export function clearGistConfig() {
-  localStorage.removeItem('gist_username')
-  localStorage.removeItem('gist_id')
-}
-
-export function getGistConfig() {
-  return {
-    username: getGistUsername(),
-    gistId: getGistId()
-  }
-}
+// Gist 配置管理已移至上方，使用独立的配置键
 
 export const DATA_SOURCES = {
   fred: {
@@ -362,8 +376,8 @@ export const DATA_SOURCES = {
   }
 }
 
-// 测试 Gist 配置
-export async function testGistConfig(username: string, gistId: string): Promise<boolean> {
+// 测试经济数据 Gist 配置
+export async function testEconomicGistConfig(username: string, gistId: string): Promise<boolean> {
   try {
     const url = `https://gist.githubusercontent.com/${username}/${gistId}/raw/economic-data.json`
     const response = await fetch(url)
