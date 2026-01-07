@@ -4,6 +4,11 @@
  * 
  * FRED API 文档：https://fred.stlouisfed.org/docs/api/fred/
  * 获取免费 API Key：https://fred.stlouisfed.org/docs/api/api_key.html
+ * 
+ * 数据处理说明：
+ * - FEDFUNDS: 联邦基金利率（直接使用百分比值）
+ * - CPIAUCSL: CPI 指数（计算同比通胀率 YoY）
+ * - UNRATE: 失业率（直接使用百分比值）
  */
 
 // 获取环境变量并清理可能的空格/换行符
@@ -93,14 +98,7 @@ function processObservations(observations, seriesId) {
     })
     .map(obs => {
       const date = obs.date.substring(0, 7) // YYYY-MM
-      let value = parseFloat(obs.value)
-      
-      // CPI 需要计算同比增长率
-      if (seriesId === 'CPIAUCSL') {
-        // 这里简化处理，实际应该计算12个月前的同比
-        // 在实际使用中，FRED 有专门的通胀率系列 CPIAUCSL_PC1
-        value = parseFloat(value.toFixed(2))
-      }
+      const value = parseFloat(obs.value)
       
       return { date, value }
     })
@@ -111,10 +109,32 @@ function processObservations(observations, seriesId) {
     monthlyData[item.date] = item.value
   })
   
-  return Object.entries(monthlyData)
+  const sortedData = Object.entries(monthlyData)
     .map(([date, value]) => ({ date, value }))
     .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-60) // 最多保留60个月
+  
+  // 对于 CPI 数据，计算同比通胀率（Year-over-Year）
+  if (seriesId === 'CPIAUCSL') {
+    const inflationRates = []
+    
+    for (let i = 12; i < sortedData.length; i++) {
+      const current = sortedData[i]
+      const yearAgo = sortedData[i - 12]
+      
+      // 计算同比变化率: ((current - yearAgo) / yearAgo) * 100
+      const inflationRate = ((current.value - yearAgo.value) / yearAgo.value) * 100
+      
+      inflationRates.push({
+        date: current.date,
+        value: parseFloat(inflationRate.toFixed(2))
+      })
+    }
+    
+    return inflationRates.slice(-60) // 最多保留60个月
+  }
+  
+  // 其他数据直接返回
+  return sortedData.slice(-60) // 最多保留60个月
 }
 
 // 获取所有经济数据
