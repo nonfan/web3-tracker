@@ -1,34 +1,101 @@
+import { useEffect, useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
-
-// 美国通胀率数据（CPI同比）
-// 数据来源：美国劳工统计局 (BLS)
-// 真实历史数据 (2021-2025)
-const inflationData = [
-  { date: '2021-06', rate: 5.4, type: 'actual' },
-  { date: '2021-12', rate: 7.0, type: 'actual' },
-  { date: '2022-06', rate: 9.1, type: 'actual' },
-  { date: '2022-12', rate: 6.5, type: 'actual' },
-  { date: '2023-06', rate: 3.0, type: 'actual' },
-  { date: '2023-12', rate: 3.4, type: 'actual' },
-  { date: '2024-06', rate: 3.3, type: 'actual' },
-  { date: '2024-09', rate: 2.4, type: 'actual' },
-  { date: '2024-11', rate: 2.7, type: 'actual' },
-  { date: '2025-03', rate: 2.5, type: 'actual' },
-  { date: '2025-06', rate: 2.3, type: 'actual' },
-  { date: '2025-09', rate: 2.2, type: 'actual' },
-  { date: '2025-11', rate: 2.1, type: 'actual' },
-]
+import { Settings, AlertCircle } from 'lucide-react'
+import { getInflationData, type EconomicDataPoint } from '../../utils/economicDataApi'
 
 export function InflationChart() {
-  const actualData = inflationData.filter(d => d.type === 'actual')
-  const currentRate = actualData[actualData.length - 1].rate
-  const currentDate = actualData[actualData.length - 1].date
+  const [inflationData, setInflationData] = useState<EconomicDataPoint[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const data = await getInflationData()
+        if (data.length === 0) {
+          setError('no-data')
+        } else {
+          setInflationData(data)
+        }
+      } catch (err) {
+        console.error('Failed to load inflation data:', err)
+        setError('load-error')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadData()
+  }, [])
+
+  // 加载状态
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+          <p className="text-[var(--text-muted)]">加载数据中...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 无数据状态
+  if (error === 'no-data' || inflationData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-amber-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">暂无数据</h3>
+          <p className="text-sm text-[var(--text-secondary)] mb-4">
+            请配置经济数据源以查看通胀率走势
+          </p>
+          <button
+            onClick={() => window.location.hash = '#/economy?tab=settings'}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors"
+          >
+            <Settings className="w-4 h-4" />
+            前往配置
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // 错误状态
+  if (error === 'load-error') {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">加载失败</h3>
+          <p className="text-sm text-[var(--text-secondary)] mb-4">
+            无法加载经济数据，请检查网络连接或数据源配置
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg transition-colors border border-[var(--border)]"
+          >
+            重新加载
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const currentRate = inflationData[inflationData.length - 1].value
+  const currentDate = inflationData[inflationData.length - 1].date
   const targetRate = 2.0
-  const peakRate = Math.max(...inflationData.map(d => d.rate))
+  const peakRate = Math.max(...inflationData.map(d => d.value))
 
   // 找到峰值日期
-  const peakData = inflationData.find(d => d.rate === peakRate)
-  const peakDate = peakData ? peakData.date : '2022-06'
+  const peakData = inflationData.find(d => d.value === peakRate)
+  const peakDate = peakData ? peakData.date : ''
 
   // 格式化日期显示
   const formatDate = (dateStr: string) => {
@@ -87,13 +154,13 @@ export function InflationChart() {
                 borderRadius: '8px',
                 color: 'var(--text-primary)',
               }}
-              formatter={(value: number) => [`${value}%`, '通胀率']}
+              formatter={(value: number | undefined) => value !== undefined ? [`${value}%`, '通胀率'] : ['-', '通胀率']}
               labelFormatter={(label) => `日期: ${label}`}
             />
             <ReferenceLine y={targetRate} stroke="#10b981" strokeDasharray="3 3" label="目标2%" />
             <Line
               type="monotone"
-              dataKey="rate"
+              dataKey="value"
               stroke="#f59e0b"
               strokeWidth={3}
               dot={{ fill: '#f59e0b', r: 4 }}
@@ -106,24 +173,12 @@ export function InflationChart() {
       {/* Analysis */}
       <div className="grid md:grid-cols-2 gap-4">
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
-          <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">通胀阶段分析</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-[var(--text-secondary)]">2020-2021</span>
-              <span className="text-emerald-400">低通胀期</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[var(--text-secondary)]">2021-2022</span>
-              <span className="text-red-400">通胀飙升</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[var(--text-secondary)]">2023-2024</span>
-              <span className="text-amber-400">持续回落</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[var(--text-secondary)]">当前状态</span>
-              <span className="text-emerald-400">接近目标</span>
-            </div>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">数据说明</h3>
+          <div className="space-y-2 text-sm text-[var(--text-secondary)]">
+            <p>• 数据来源：美国劳工统计局 (BLS)</p>
+            <p>• 指标：CPI 消费者物价指数同比</p>
+            <p>• 更新频率：每月发布，通常有1-2个月延迟</p>
+            <p>• 美联储目标：长期维持在 2% 左右</p>
           </div>
         </div>
 

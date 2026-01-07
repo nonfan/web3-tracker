@@ -1,40 +1,101 @@
-import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Bar } from 'recharts'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
-
-// 美联储利率数据
-// 数据来源：FRED (Federal Reserve Economic Data)
-// 真实历史数据 (2021-2025)
-const fedRateData = [
-  { date: '2021-01', rate: 0.09, change: 0, gdp: 6.3, inflation: 1.4, type: 'actual' },
-  { date: '2021-12', rate: 0.08, change: -0.01, gdp: 5.9, inflation: 7.0, type: 'actual' },
-  { date: '2022-03', rate: 0.33, change: 0.25, gdp: -1.6, inflation: 8.5, type: 'actual', event: '开始加息周期' },
-  { date: '2022-06', rate: 1.21, change: 0.88, gdp: -0.6, inflation: 9.1, type: 'actual', event: '加息75bp' },
-  { date: '2022-09', rate: 3.08, change: 1.87, gdp: 3.2, inflation: 8.2, type: 'actual' },
-  { date: '2022-12', rate: 4.10, change: 1.02, gdp: 2.6, inflation: 6.5, type: 'actual' },
-  { date: '2023-03', rate: 4.65, change: 0.55, gdp: 2.2, inflation: 5.0, type: 'actual' },
-  { date: '2023-07', rate: 5.12, change: 0.47, gdp: 2.1, inflation: 3.2, type: 'actual', event: '加息周期结束' },
-  { date: '2023-12', rate: 5.33, change: 0.21, gdp: 3.3, inflation: 3.4, type: 'actual' },
-  { date: '2024-03', rate: 5.33, change: 0, gdp: 1.6, inflation: 3.5, type: 'actual' },
-  { date: '2024-06', rate: 5.33, change: 0, gdp: 3.0, inflation: 3.3, type: 'actual' },
-  { date: '2024-09', rate: 4.83, change: -0.50, gdp: 2.8, inflation: 2.4, type: 'actual', event: '开始降息周期' },
-  { date: '2024-12', rate: 4.33, change: -0.50, gdp: 2.3, inflation: 2.7, type: 'actual' },
-  { date: '2025-03', rate: 4.08, change: -0.25, gdp: 2.2, inflation: 2.5, type: 'actual' },
-  { date: '2025-06', rate: 3.83, change: -0.25, gdp: 2.1, inflation: 2.3, type: 'actual' },
-  { date: '2025-09', rate: 3.58, change: -0.25, gdp: 2.0, inflation: 2.2, type: 'actual' },
-  { date: '2025-12', rate: 3.33, change: -0.25, gdp: 2.0, inflation: 2.1, type: 'actual' },
-]
+import { useEffect, useState } from 'react'
+import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts'
+import { TrendingUp, TrendingDown, Minus, Settings, AlertCircle } from 'lucide-react'
+import { getFedRateData, type FedRateData } from '../../utils/economicDataApi'
 
 export function FedRateChart() {
+  const [fedRateData, setFedRateData] = useState<FedRateData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const data = await getFedRateData()
+        if (data.length === 0) {
+          setError('no-data')
+        } else {
+          setFedRateData(data)
+        }
+      } catch (err) {
+        console.error('Failed to load Fed rate data:', err)
+        setError('load-error')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadData()
+  }, [])
+
+  // 加载状态
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+          <p className="text-[var(--text-muted)]">加载数据中...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 无数据状态
+  if (error === 'no-data' || fedRateData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-violet-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-violet-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">暂无数据</h3>
+          <p className="text-sm text-[var(--text-secondary)] mb-4">
+            请配置经济数据源以查看美联储利率走势
+          </p>
+          <button
+            onClick={() => window.location.hash = '#/economy?tab=settings'}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg transition-colors"
+          >
+            <Settings className="w-4 h-4" />
+            前往配置
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // 错误状态
+  if (error === 'load-error') {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">加载失败</h3>
+          <p className="text-sm text-[var(--text-secondary)] mb-4">
+            无法加载经济数据，请检查网络连接或数据源配置
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg transition-colors border border-[var(--border)]"
+          >
+            重新加载
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const actualData = fedRateData.filter(d => d.type === 'actual')
   const currentRate = actualData[actualData.length - 1].rate
   const currentChange = actualData[actualData.length - 1].change
-  const projectedRate = fedRateData[fedRateData.length - 1].rate
   const peakRate = Math.max(...fedRateData.map(d => d.rate))
-  const totalCuts = fedRateData.filter(d => d.type === 'forecast' && d.change < 0).length
 
   // 找到峰值日期
   const peakData = fedRateData.find(d => d.rate === peakRate)
-  const peakDate = peakData ? peakData.date : '2023-07'
+  const peakDate = peakData ? peakData.date : ''
 
   // 格式化日期显示
   const formatDate = (dateStr: string) => {
@@ -111,13 +172,6 @@ export function FedRateChart() {
               tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
               label={{ value: '利率 (%)', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 12 }}
             />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              stroke="var(--text-muted)"
-              tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
-              label={{ value: 'GDP增长 (%)', angle: 90, position: 'insideRight', fill: 'var(--text-muted)', fontSize: 12 }}
-            />
             <Tooltip
               contentStyle={{
                 backgroundColor: 'var(--card-bg)',
@@ -145,16 +199,6 @@ export function FedRateChart() {
                             </span>
                           </div>
                         )}
-                        <div className="flex justify-between gap-4">
-                          <span className="text-[var(--text-muted)]">GDP:</span>
-                          <span className={`font-mono font-semibold ${data.gdp > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {data.gdp > 0 ? '+' : ''}{data.gdp}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-[var(--text-muted)]">通胀:</span>
-                          <span className="font-mono font-semibold text-amber-400">{data.inflation}%</span>
-                        </div>
                         {data.event && (
                           <div className="mt-2 pt-2 border-t border-[var(--border)]">
                             <div className="text-blue-400 font-medium">{data.event}</div>
@@ -206,15 +250,7 @@ export function FedRateChart() {
               name="联邦基金利率"
             />
 
-            {/* GDP增长柱状图 */}
-            <Bar
-              yAxisId="right"
-              dataKey="gdp"
-              fill="#10b981"
-              opacity={0.3}
-              radius={[4, 4, 0, 0]}
-              name="GDP增长率"
-            />
+
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -235,12 +271,12 @@ export function FedRateChart() {
 
       {/* Analysis */}
       <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-amber-400 mb-2">💡 投资建议</h3>
+        <h3 className="text-sm font-semibold text-amber-400 mb-2">💡 数据说明</h3>
         <ul className="text-sm text-[var(--text-secondary)] space-y-1">
+          <li>• 数据来源：FRED (Federal Reserve Economic Data)</li>
+          <li>• 更新频率：每日自动更新</li>
+          <li>• 利率变化直接影响市场流动性和资产价格</li>
           <li>• 降息周期通常利好风险资产（股票、加密货币）</li>
-          <li>• 利率下降降低借贷成本，增加市场流动性</li>
-          <li>• 关注美联储会议纪要和经济数据发布</li>
-          <li>• 当前处于降息周期初期，市场流动性改善</li>
         </ul>
       </div>
     </div>

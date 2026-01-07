@@ -28,6 +28,14 @@ export function EconomyPage() {
   const [cryptoDate, setCryptoDate] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  // 检查 URL 参数，如果有 tab=settings 则跳转到设置
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('tab') === 'settings') {
+      setActiveChart('settings')
+    }
+  }, [])
+
   // 加载真实数据
   useEffect(() => {
     const loadData = async () => {

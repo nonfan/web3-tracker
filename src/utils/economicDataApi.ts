@@ -120,11 +120,11 @@ export async function getFedRateData(): Promise<FedRateData[]> {
       return processFedRateFromGist(gistData.fedRate)
     }
     
-    console.log('Using local Fed rate data')
-    return getLocalFedRateData()
+    console.log('⚠️ No Fed rate data available from Gist')
+    return []
   } catch (error) {
     console.error('Error fetching Fed rate data:', error)
-    return getLocalFedRateData()
+    return []
   }
 }
 
@@ -143,11 +143,11 @@ export async function getInflationData(): Promise<EconomicDataPoint[]> {
       }))
     }
     
-    console.log('Using local inflation data')
-    return getLocalInflationData()
+    console.log('⚠️ No inflation data available from Gist')
+    return []
   } catch (error) {
     console.error('Error fetching inflation data:', error)
-    return getLocalInflationData()
+    return []
   }
 }
 
@@ -166,11 +166,11 @@ export async function getUnemploymentData(): Promise<EconomicDataPoint[]> {
       }))
     }
     
-    console.log('Using local unemployment data')
-    return getLocalUnemploymentData()
+    console.log('⚠️ No unemployment data available from Gist')
+    return []
   } catch (error) {
     console.error('Error fetching unemployment data:', error)
-    return getLocalUnemploymentData()
+    return []
   }
 }
 
@@ -270,58 +270,6 @@ export async function getCryptoMarketData() {
     console.warn('Using backup data')
     return getBackupCryptoData()
   }
-}
-
-// 本地真实历史数据（备份数据，当API不可用时使用）
-// 数据来源：FRED 官方数据
-// 最后更新：2024年12月
-// 注意：只包含已发布的真实历史数据，不包含预测数据
-function getLocalFedRateData(): FedRateData[] {
-  return [
-    { date: '2021-01', rate: 0.09, change: 0, type: 'actual' },
-    { date: '2021-12', rate: 0.08, change: -0.01, type: 'actual' },
-    { date: '2022-03', rate: 0.33, change: 0.25, type: 'actual', event: '开始加息周期' },
-    { date: '2022-06', rate: 1.21, change: 0.88, type: 'actual' },
-    { date: '2022-09', rate: 3.08, change: 1.87, type: 'actual' },
-    { date: '2022-12', rate: 4.10, change: 1.02, type: 'actual' },
-    { date: '2023-03', rate: 4.65, change: 0.55, type: 'actual' },
-    { date: '2023-07', rate: 5.12, change: 0.47, type: 'actual', event: '加息周期结束' },
-    { date: '2023-12', rate: 5.33, change: 0.21, type: 'actual' },
-    { date: '2024-03', rate: 5.33, change: 0, type: 'actual' },
-    { date: '2024-06', rate: 5.33, change: 0, type: 'actual' },
-    { date: '2024-09', rate: 4.83, change: -0.50, type: 'actual', event: '开始降息周期' },
-    { date: '2024-12', rate: 4.33, change: -0.50, type: 'actual' },
-    // 2025年及以后的数据需要通过 GitHub Actions 从 FRED API 自动更新
-  ]
-}
-
-function getLocalInflationData(): EconomicDataPoint[] {
-  return [
-    { date: '2021-06', value: 5.4, source: 'BLS' },
-    { date: '2021-12', value: 7.0, source: 'BLS' },
-    { date: '2022-06', value: 9.1, source: 'BLS' },
-    { date: '2022-12', value: 6.5, source: 'BLS' },
-    { date: '2023-06', value: 3.0, source: 'BLS' },
-    { date: '2023-12', value: 3.4, source: 'BLS' },
-    { date: '2024-06', value: 3.3, source: 'BLS' },
-    { date: '2024-09', value: 2.4, source: 'BLS' },
-    { date: '2024-11', value: 2.7, source: 'BLS' },
-    // 2025年及以后的数据需要通过 GitHub Actions 从 FRED API 自动更新
-  ]
-}
-
-function getLocalUnemploymentData(): EconomicDataPoint[] {
-  return [
-    { date: '2021-12', value: 3.9, source: 'BLS' },
-    { date: '2022-06', value: 3.6, source: 'BLS' },
-    { date: '2022-12', value: 3.5, source: 'BLS' },
-    { date: '2023-06', value: 3.6, source: 'BLS' },
-    { date: '2023-12', value: 3.7, source: 'BLS' },
-    { date: '2024-06', value: 4.0, source: 'BLS' },
-    { date: '2024-09', value: 4.1, source: 'BLS' },
-    { date: '2024-11', value: 4.2, source: 'BLS' },
-    // 2025年及以后的数据需要通过 GitHub Actions 从 FRED API 自动更新
-  ]
 }
 
 function getBackupCryptoData() {
