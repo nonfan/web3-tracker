@@ -390,3 +390,71 @@ export async function testEconomicGistConfig(username: string, gistId: string): 
     return false
   }
 }
+
+/**
+ * 从项目的 Gist 配置中获取 Token
+ * 复用项目同步功能的 Token
+ */
+function getProjectGistToken(): string | null {
+  const STORAGE_KEY = 'web3tracker-gist-config'
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (!stored) return null
+  try {
+    const config = JSON.parse(stored)
+    return config.token || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 查找所有包含经济数据的 Gist
+ * 使用项目的 Token 进行查询
+ */
+export async function findEconomicGists(): Promise<Array<{ id: string; updatedAt: string; description: string }>> {
+  const token = getProjectGistToken()
+  if (!token) {
+    console.warn('⚠️ No project token found, cannot search for economic gists')
+    return []
+  }
+
+  try {
+    const response = await fetch('https://api.github.com/gists?per_page=100', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    
+    if (!response.ok) {
+      console.error('❌ Failed to fetch gists:', response.status)
+      return []
+    }
+    
+    const gists = await response.json()
+    const results: Array<{ id: string; updatedAt: string; description: string }> = []
+    
+    // 查找包含 economic-data.json 的 Gist
+    for (const gist of gists) {
+      if (gist.files && gist.files['economic-data.json']) {
+        results.push({
+          id: gist.id,
+          updatedAt: gist.updated_at,
+          description: gist.description || '经济数据存储'
+        })
+      }
+    }
+    
+    console.log(`✅ Found ${results.length} economic data gists`)
+    return results
+  } catch (error) {
+    console.error('❌ Error searching for economic gists:', error)
+    return []
+  }
+}
+
+/**
+ * 检查项目 Token 是否已配置
+ */
+export function hasProjectToken(): boolean {
+  return !!getProjectGistToken()
+}

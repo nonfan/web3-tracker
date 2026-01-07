@@ -4,14 +4,25 @@ import {
   clearEconomicGistConfig,
   testEconomicGistConfig,
   getEconomicGistConfigForUI,
+  findEconomicGists,
+  hasProjectToken,
   DATA_SOURCES
 } from '../../utils/economicDataApi'
-import { Check, AlertCircle, ExternalLink, Info } from 'lucide-react'
+import { Check, AlertCircle, ExternalLink, Info, RefreshCw, Search } from 'lucide-react'
+
+interface EconomicGist {
+  id: string
+  updatedAt: string
+  description: string
+}
 
 export function DataSourceConfig() {
   const [username, setUsername] = useState('')
   const [gistId, setGistId] = useState('')
   const [testing, setTesting] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const [availableGists, setAvailableGists] = useState<EconomicGist[]>([])
+  const [hasToken, setHasToken] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null)
 
   useEffect(() => {
@@ -20,11 +31,35 @@ export function DataSourceConfig() {
       setUsername(config.username)
       setGistId(config.gistId)
     }
+    setHasToken(hasProjectToken())
   }, [])
 
   const showMessage = (type: 'success' | 'error' | 'info', text: string) => {
     setMessage({ type, text })
     setTimeout(() => setMessage(null), 5000)
+  }
+
+  const handleSearchGists = async () => {
+    if (!hasToken) {
+      showMessage('error', '请先在项目同步功能中配置 GitHub Token')
+      return
+    }
+
+    setSearching(true)
+    const gists = await findEconomicGists()
+
+    if (gists.length === 0) {
+      showMessage('info', '未找到经济数据 Gist，请先创建一个')
+    } else {
+      showMessage('success', `找到 ${gists.length} 个经济数据 Gist`)
+      setAvailableGists(gists)
+    }
+    setSearching(false)
+  }
+
+  const handleSelectGist = (gist: EconomicGist) => {
+    setGistId(gist.id)
+    showMessage('info', '已选择 Gist，请保存配置')
   }
 
   const handleTest = async () => {
@@ -58,7 +93,18 @@ export function DataSourceConfig() {
     clearEconomicGistConfig()
     setUsername('')
     setGistId('')
+    setAvailableGists([])
     showMessage('info', '配置已清除，将使用本地备份数据')
+  }
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleString('zh-CN', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
 
   return (
@@ -70,6 +116,21 @@ export function DataSourceConfig() {
           配置 GitHub Gist 以获取最新的经济数据（由 GitHub Actions 自动更新）
         </p>
       </div>
+
+      {/* Token 状态提示 */}
+      {!hasToken && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-2 text-sm">
+              <p className="text-amber-300 font-medium">⚠️ 未检测到 GitHub Token</p>
+              <p className="text-[var(--text-secondary)]">
+                请先在项目页面的同步功能中配置 GitHub Token，然后刷新此页面。
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 重要提示 */}
       <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
@@ -106,6 +167,58 @@ export function DataSourceConfig() {
         </div>
       )}
 
+      {/* Search Gists */}
+      {hasToken && (
+        <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">🔍 自动检索 Gist</h3>
+            <button
+              onClick={handleSearchGists}
+              disabled={searching}
+              className="px-4 py-2 bg-violet-500/20 border border-violet-500/30 rounded-lg text-sm font-medium text-violet-400 hover:bg-violet-500/30 transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              {searching ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  搜索中...
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4" />
+                  搜索经济数据 Gist
+                </>
+              )}
+            </button>
+          </div>
+
+          {availableGists.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-[var(--text-muted)]">找到 {availableGists.length} 个经济数据 Gist：</p>
+              {availableGists.map((gist) => (
+                <div
+                  key={gist.id}
+                  className={`flex items-center justify-between p-3 rounded-lg transition-all cursor-pointer ${gist.id === gistId
+                      ? 'bg-violet-500/10 border border-violet-500/30'
+                      : 'bg-[var(--input-bg)] hover:bg-[var(--bg-tertiary)]'
+                    }`}
+                  onClick={() => handleSelectGist(gist)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-[var(--text-primary)] font-medium truncate">{gist.description}</p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      {gist.id.slice(0, 12)}... · 更新于 {formatDate(gist.updatedAt)}
+                    </p>
+                  </div>
+                  {gist.id === gistId && (
+                    <Check className="w-5 h-5 text-violet-400 shrink-0 ml-2" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Configuration Form */}
       <div className="space-y-4">
         <div>
@@ -129,8 +242,8 @@ export function DataSourceConfig() {
             type="text"
             value={gistId}
             onChange={(e) => setGistId(e.target.value)}
-            className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
-            placeholder="abc123def456..."
+            className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
+            placeholder="abc123def456... (可通过上方搜索自动填充)"
           />
           <p className="text-xs text-[var(--text-muted)] mt-1">
             这是存储经济数据的 Gist ID（不是项目数据的 Gist）
@@ -194,9 +307,10 @@ export function DataSourceConfig() {
         <h3 className="text-sm font-semibold text-violet-400 mb-2">📚 配置指南</h3>
         <ol className="text-sm text-[var(--text-secondary)] space-y-2 list-decimal list-inside">
           <li>在项目同步功能中配置 GitHub Token（如果还没有）</li>
-          <li>创建一个新的 Gist 用于存储经济数据</li>
+          <li>点击上方"搜索经济数据 Gist"按钮自动检索</li>
+          <li>选择一个 Gist 或创建新的 Gist</li>
           <li>配置 GitHub Actions 自动更新（参考 FRED_API_SETUP.md）</li>
-          <li>在此处填写 Gist ID 并保存</li>
+          <li>填写用户名并保存配置</li>
           <li>刷新页面即可看到最新数据</li>
         </ol>
       </div>
