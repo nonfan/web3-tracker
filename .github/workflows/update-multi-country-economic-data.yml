@@ -29,7 +29,8 @@ jobs:
           echo "Files in scripts directory:"
           ls -la scripts/
           echo "Checking if target file exists:"
-          ls -la scripts/update-multi-country-economic-data.js || echo "File not found"
+          ls -la scripts/update-multi-country-economic-data.cjs || echo "CJS file not found"
+          ls -la scripts/update-multi-country-economic-data.js || echo "JS file not found"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -47,7 +48,7 @@ jobs:
           OECD_API_KEY: ${{ secrets.OECD_API_KEY }}
           ECB_API_KEY: ${{ secrets.ECB_API_KEY }}
           ENABLED_COUNTRIES: ${{ github.event.inputs.countries || 'US,CN,EU,JP' }}
-        run: node scripts/update-multi-country-economic-data.js
+        run: node scripts/update-multi-country-economic-data.cjs
 
       - name: Notify on success
         if: success()
