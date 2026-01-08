@@ -260,6 +260,37 @@ export const useStore = create<AppState>()(
         set({ deletedTokens: [] })
       },
 
+      addTokenTransaction: (tokenId: string, type: TransactionType, amount: number, note?: string) => {
+        set((state) => ({
+          tokens: state.tokens.map((t) =>
+            t.id === tokenId
+              ? {
+                  ...t,
+                  transactions: [
+                    ...(t.transactions || []),
+                    { id: uuidv4(), type, amount, note, createdAt: Date.now() },
+                  ],
+                  updatedAt: Date.now(),
+                }
+              : t
+          ),
+        }))
+      },
+
+      deleteTokenTransaction: (tokenId: string, transactionId: string) => {
+        set((state) => ({
+          tokens: state.tokens.map((t) =>
+            t.id === tokenId
+              ? {
+                  ...t,
+                  transactions: (t.transactions || []).filter((tr) => tr.id !== transactionId),
+                  updatedAt: Date.now(),
+                }
+              : t
+          ),
+        }))
+      },
+
       addTokenInvestment: (tokenId, investment) => {
         set((state) => ({
           tokens: state.tokens.map((t) =>

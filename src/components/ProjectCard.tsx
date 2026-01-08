@@ -9,6 +9,7 @@ import { TokenPriceChart } from './TokenPriceChart'
 import { TokenPriceImporter } from './TokenPriceImporter'
 import { getTokenPriceHistory, getTokenInfo } from '../utils/coinGeckoApi'
 import { setCachedPriceData } from '../utils/priceDataCache'
+import { formatTokenAmount, formatCurrency } from '../utils/numberFormat'
 import { createPortal } from 'react-dom'
 import gsap from 'gsap'
 
@@ -90,7 +91,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
   const [transactionType, setTransactionType] = useState<TransactionType>('investment')
   const [transactionAmount, setTransactionAmount] = useState('')
   const [transactionNote, setTransactionNote] = useState('')
-  const { addTask, toggleTask, deleteTask, deleteProject, deleteToken, updateProject, updateToken, addTransaction, deleteTransaction } = useStore()
+  const { addTask, toggleTask, deleteTask, deleteProject, deleteToken, updateProject, updateToken, addTransaction, deleteTransaction, addTokenTransaction, deleteTokenTransaction } = useStore()
 
   const profitButtonRef = useRef<HTMLButtonElement>(null)
   const profitPopupRef = useRef<HTMLDivElement>(null)
@@ -107,27 +108,99 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
   const deadline = project.deadline ? formatDeadline(project.deadline) : null
 
   // 计算总投入和总收益
-  const { totalInvestment, totalProfit } = useMemo(() => {
+  const { totalInvestment, totalProfit, currentHoldings, currentValue } = useMemo(() => {
     const transactions = project.transactions || []
     let investment = 0
     let profit = 0
+    let holdings = 0 // 当前持有数量
 
     // 兼容旧数据
     if (transactions.length === 0) {
       investment = project.investment || 0
       profit = project.profit || 0
-    } else {
-      for (const t of transactions) {
-        if (t.type === 'investment') {
-          investment += t.amount
-        } else {
-          profit += t.amount
+      return { totalInvestment: investment, totalProfit: profit, currentHoldings: 0, currentValue: 0 }
+    }
+
+    // 计算投入、收益和持有数量
+    for (const t of transactions) {
+      if (t.type === 'investment') {
+        investment += t.amount
+        // 从备注中提取数量，支持多种格式
+        if (t.note && isToken) {
+          // 尝试多种格式：1000 个代币、1000个、1000 tokens、纯数字
+          const patterns = [
+            /(\d+(?:\.\d+)?)\s*个/,
+            /(\d+(?:\.\d+)?)\s*tokens?/i,
+            /^(\d+(?:\.\d+)?)$/
+          ]
+          
+          for (const pattern of patterns) {
+            const match = t.note.match(pattern)
+            if (match) {
+              holdings += parseFloat(match[1])
+              break
+            }
+          }
+        }
+      } else {
+        profit += t.amount
+        // 从备注中提取卖出数量
+        if (t.note && isToken) {
+          const patterns = [
+            /(\d+(?:\.\d+)?)\s*个/,
+            /(\d+(?:\.\d+)?)\s*tokens?/i,
+            /^(\d+(?:\.\d+)?)$/
+          ]
+          
+          for (const pattern of patterns) {
+            const match = t.note.match(pattern)
+            if (match) {
+              holdings -= parseFloat(match[1])
+              break
+            }
+          }
         }
       }
     }
 
-    return { totalInvestment: investment, totalProfit: profit }
-  }, [project.transactions, project.investment, project.profit])
+    // 调试信息 - 总是输出，不管是否是代币
+    if (isToken) {
+      console.log(`代币 ${project.name} 详细信息:`, {
+        isToken,
+        hasCurrentPrice: 'currentPrice' in project,
+        currentPrice: (project as any).currentPrice,
+        holdings,
+        investment,
+        profit,
+        transactions: transactions.map(t => ({ type: t.type, amount: t.amount, note: t.note }))
+      })
+    }
+
+    // 对于代币，收益只计算已实现收益（卖出获得的金额）
+    if (isToken && 'currentPrice' in project && (project as any).currentPrice) {
+      const currentPrice = (project as any).currentPrice
+      const currentValue = holdings * currentPrice
+      
+      // 收益计算调试信息
+      console.log(`代币 ${project.name} 收益计算:`, {
+        holdings: `${holdings}个`,
+        currentPrice: `$${currentPrice}`,
+        currentValue: `$${currentValue.toFixed(2)}`,
+        investment: `$${investment}`,
+        realizedProfit: `$${profit}`, // 只显示已实现收益
+        note: '收益只计算卖出获得的金额，不包括未实现收益'
+      })
+      
+      return { 
+        totalInvestment: investment, 
+        totalProfit: profit, // 只返回已实现收益
+        currentHoldings: holdings,
+        currentValue: currentValue
+      }
+    }
+
+    return { totalInvestment: investment, totalProfit: profit, currentHoldings: holdings, currentValue: 0 }
+  }, [project.transactions, project.investment, project.profit, isToken, project])
 
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault()
@@ -226,9 +299,23 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
     // 代币时，买入和卖出的数量都为必填；项目时，备注可选
     if (isToken && !transactionNote.trim()) return
 
-    addTransaction(project.id, transactionType, amount, transactionNote || undefined)
+    // 代币卖出时验证数量不能超过持有量
+    if (isToken && transactionType === 'profit') {
+      const sellAmount = parseFloat(transactionNote)
+      if (!isNaN(sellAmount) && sellAmount > currentHoldings) {
+        // 可以在这里添加错误提示，但UI已经有提示了
+        return
+      }
+    }
+
+    if (isToken) {
+      addTokenTransaction(project.id, transactionType, amount, transactionNote || undefined)
+    } else {
+      addTransaction(project.id, transactionType, amount, transactionNote || undefined)
+    }
     setTransactionAmount('')
     setTransactionNote('')
+    setShowTransactionPanel(false)
   }
 
   // 导入真实价格数据
@@ -474,12 +561,22 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
       {/* Chain - 代币显示所属链 */}
       {isToken && 'chain' in project && project.chain && (
         <div className={`mb-3 w-full ${(project.logoUrl || project.website) ? 'pl-[48px]' : ''}`}>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-violet-500/10 border border-violet-500/20 rounded-lg text-xs text-violet-400">
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-            </svg>
-            <span className="font-medium">{(project as any).chain}</span>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-violet-500/10 border border-violet-500/20 rounded-lg text-xs text-violet-400">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+              <span className="font-medium">{(project as any).chain}</span>
+            </div>
+            {/* 代币价格图表按钮 */}
+            <button
+              onClick={handleShowPriceChart}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/15 transition-colors"
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span className="font-medium">价格走势</span>
+            </button>
           </div>
         </div>
       )}
@@ -495,7 +592,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
         {totalInvestment > 0 ? (
           <div className="flex items-center gap-1 text-[var(--text-muted)]">
             <DollarSign className="w-3.5 h-3.5" />
-            <span>投入: ${totalInvestment.toLocaleString()}</span>
+            <span>投入: {formatCurrency(totalInvestment)}</span>
           </div>
         ) : (
           <div className="flex items-center gap-1 text-[var(--text-muted)] opacity-50">
@@ -506,12 +603,12 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
         {totalProfit !== 0 ? (
           <div className={`flex items-center gap-1 ${totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>收益: {totalProfit >= 0 ? '+' : ''}${totalProfit.toLocaleString()}</span>
+            <span>{isToken ? '已实现: ' : '收益: '}{totalProfit >= 0 ? '+' : ''}{formatCurrency(totalProfit)}</span>
           </div>
         ) : (
           <div className="flex items-center gap-1 text-[var(--text-muted)] opacity-50">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>收益: --</span>
+            <span>{isToken ? '已实现: --' : '收益: --'}</span>
           </div>
         )}
         {/* 查看记录按钮 */}
@@ -522,16 +619,6 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
           >
             <List className="w-3.5 h-3.5" />
             <span>{project.transactions?.length}笔</span>
-          </button>
-        )}
-        {/* 代币价格图表按钮 */}
-        {isToken && (
-          <button
-            onClick={handleShowPriceChart}
-            className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors"
-          >
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>价格走势</span>
           </button>
         )}
       </div>
@@ -590,20 +677,44 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
                   '备注 (可选)'
                 )}
               </label>
+              {/* 卖出时显示当前可用额度 */}
+              {isToken && transactionType === 'profit' && (
+                <div className="mb-2 p-2 bg-violet-500/10 border border-violet-500/20 rounded-lg">
+                  <div className="text-xs text-violet-400">
+                    {currentHoldings > 0 ? (
+                      <>当前可卖出额度: <span className="font-medium">{formatTokenAmount(currentHoldings)}个</span></>
+                    ) : (
+                      <span className="text-amber-400">暂无持仓，无法卖出</span>
+                    )}
+                  </div>
+                </div>
+              )}
               <input
                 type="text"
                 value={transactionNote}
                 onChange={(e) => setTransactionNote(e.target.value)}
-                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-violet-500/50 text-[var(--text-primary)]"
+                disabled={isToken && transactionType === 'profit' && currentHoldings <= 0}
+                className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-violet-500/50 text-[var(--text-primary)] disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder={
                   isToken
                     ? transactionType === 'investment'
                       ? '如：1000 个代币'
-                      : '如：500 个代币'
+                      : currentHoldings > 0 
+                        ? `如：500 个代币 (最多 ${formatTokenAmount(currentHoldings)}个)`
+                        : '暂无持仓，无法卖出'
                     : '如：空投领取、Gas费等'
                 }
                 required={isToken}
               />
+              {/* 卖出数量验证提示 */}
+              {isToken && transactionType === 'profit' && transactionNote && (() => {
+                const sellAmount = parseFloat(transactionNote)
+                return !isNaN(sellAmount) && sellAmount > currentHoldings ? (
+                  <div className="mt-1 text-xs text-red-400">
+                    卖出数量不能超过持有数量 ({formatTokenAmount(currentHoldings)}个)
+                  </div>
+                ) : null
+              })()}
             </div>
           </div>
 
@@ -619,7 +730,14 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
               disabled={
                 !transactionAmount ||
                 parseFloat(transactionAmount) === 0 ||
-                (isToken && !transactionNote.trim())
+                (isToken && !transactionNote.trim()) ||
+                // 代币卖出时，没有持仓或数量超过持有量
+                (isToken && transactionType === 'profit' && (
+                  currentHoldings <= 0 || (() => {
+                    const sellAmount = parseFloat(transactionNote)
+                    return !isNaN(sellAmount) && sellAmount > currentHoldings
+                  })()
+                ))
               }
               className="flex-1 py-2 text-xs bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -677,9 +795,9 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
       {/* 交易记录列表弹窗 */}
       {showTransactionList && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--card-bg)] rounded-2xl p-5 w-full max-w-md border border-[var(--border-hover)] shadow-2xl max-h-[70vh] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+          <div className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-md border border-[var(--border-hover)] shadow-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xl font-bold text-[var(--text-primary)]">
                 {project.name} - 交易记录
               </h3>
               <button
@@ -691,28 +809,56 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
             </div>
 
             {/* 汇总 */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className={`grid ${isToken && currentHoldings > 0 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2'} gap-3 mb-4`}>
               <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
                 <div className="text-xs text-amber-400 mb-1">总投入</div>
-                <div className="text-lg font-bold text-amber-400">${totalInvestment.toLocaleString()}</div>
+                <div className="text-lg font-bold text-amber-400">{formatCurrency(totalInvestment)}</div>
               </div>
               <div className={`p-3 rounded-xl ${totalProfit >= 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
-                <div className={`text-xs ${totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'} mb-1`}>总收益</div>
+                <div className={`text-xs ${totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'} mb-1`}>
+                  {isToken ? '已实现收益' : '总收益'}
+                </div>
                 <div className={`text-lg font-bold ${totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {totalProfit >= 0 ? '+' : ''}${totalProfit.toLocaleString()}
+                  {totalProfit >= 0 ? '+' : ''}{formatCurrency(totalProfit)}
                 </div>
               </div>
+              {/* 代币额外信息 */}
+              {isToken && currentHoldings > 0 && (
+                <>
+                  <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl">
+                    <div className="text-xs text-violet-400 mb-1">持有数量</div>
+                    <div className="text-lg font-bold text-violet-400">{formatTokenAmount(currentHoldings)}</div>
+                    <div className="text-xs text-violet-400/70">个代币</div>
+                  </div>
+                  {currentValue > 0 && (
+                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                      <div className="text-xs text-blue-400 mb-1">当前市值</div>
+                      <div className="text-lg font-bold text-blue-400">{formatCurrency(currentValue)}</div>
+                      {isToken && 'currentPrice' in project && (project as any).currentPrice && (
+                        <div className="text-xs text-blue-400/70">
+                          @${(project as any).currentPrice.toFixed(6)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* 记录列表 */}
-            <div className="flex-1 overflow-y-auto space-y-2">
+            <div className="flex-1 overflow-y-auto space-y-3">
               {(project.transactions || []).length === 0 ? (
-                <div className="text-center py-8 text-[var(--text-muted)]">暂无记录</div>
+                <div className="text-center py-12 text-[var(--text-muted)]">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--input-bg)] flex items-center justify-center">
+                    <List className="w-8 h-8 text-[var(--text-muted)]" />
+                  </div>
+                  <p>暂无交易记录</p>
+                </div>
               ) : (
                 [...(project.transactions || [])].reverse().map((t) => (
                   <div
                     key={t.id}
-                    className="flex items-center gap-3 p-3 bg-[var(--input-bg)] rounded-xl group"
+                    className="flex items-center gap-3 p-4 bg-[var(--input-bg)] rounded-xl group hover:bg-[var(--bg-secondary)] transition-colors"
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${t.type === 'investment' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
                       }`}>
@@ -722,16 +868,27 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
                       <div className="flex items-center gap-2">
                         <span className={`font-medium ${t.type === 'investment' ? 'text-amber-400' : t.amount >= 0 ? 'text-emerald-400' : 'text-red-400'
                           }`}>
-                          {t.type === 'investment' ? '-' : t.amount >= 0 ? '+' : ''}${Math.abs(t.amount).toLocaleString()}
+                          {t.type === 'investment' ? '-' : t.amount >= 0 ? '+' : ''}{formatCurrency(Math.abs(t.amount))}
                         </span>
                         <span className="text-xs text-[var(--text-muted)]">{formatDate(t.createdAt)}</span>
                       </div>
                       {t.note && (
-                        <div className="text-xs text-[var(--text-muted)] truncate">{t.note}</div>
+                        <div className="text-xs text-[var(--text-muted)] truncate">
+                          {isToken ? (() => {
+                            const num = parseFloat(t.note)
+                            return isNaN(num) ? t.note : formatTokenAmount(num) + '个'
+                          })() : t.note}
+                        </div>
                       )}
                     </div>
                     <button
-                      onClick={() => deleteTransaction(project.id, t.id)}
+                      onClick={() => {
+                        if (isToken) {
+                          deleteTokenTransaction(project.id, t.id)
+                        } else {
+                          deleteTransaction(project.id, t.id)
+                        }
+                      }}
                       className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/10 rounded-lg text-[var(--text-muted)] hover:text-red-400 transition-all"
                     >
                       <X className="w-4 h-4" />
@@ -743,7 +900,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
 
             <button
               onClick={() => setShowTransactionList(false)}
-              className="mt-4 w-full py-2.5 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              className="mt-6 w-full py-3 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors font-medium"
             >
               关闭
             </button>
@@ -1147,7 +1304,13 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
           return (
             <button
               key={s}
-              onClick={() => updateProject(project.id, { status: s })}
+              onClick={() => {
+                if (isToken) {
+                  updateToken(project.id, { status: s })
+                } else {
+                  updateProject(project.id, { status: s })
+                }
+              }}
               className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${isActive
                 ? `${config.bg} ${config.text}`
                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--input-bg)]'
@@ -1162,7 +1325,11 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
           <button
             onClick={() => {
               const willArchive = project.status !== 'archived'
-              updateProject(project.id, { status: willArchive ? 'archived' : 'active' })
+              if (isToken) {
+                updateToken(project.id, { status: willArchive ? 'archived' : 'active' })
+              } else {
+                updateProject(project.id, { status: willArchive ? 'archived' : 'active' })
+              }
               onArchive?.(willArchive)
             }}
             className={`px-2 py-1.5 text-xs font-medium rounded-lg transition-all ${project.status === 'archived'
@@ -1179,14 +1346,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
         </Tooltip>
       </div>
 
-      <ConfirmDialog
-        isOpen={showTransactionList}
-        title={`${project.name} - 交易记录`}
-        message=""
-        confirmText="关闭"
-        onConfirm={() => setShowTransactionList(false)}
-        onCancel={() => setShowTransactionList(false)}
-      />
+
 
       {/* 价格数据导入器 */}
       <TokenPriceImporter

@@ -5,6 +5,7 @@ import { ProjectForm } from '../components/ProjectForm'
 import { BatchActions } from '../components/BatchActions'
 import { Analytics } from '../components/Analytics'
 import { generateMockPriceHistory } from '../utils/mockPriceData'
+import { formatCurrency } from '../utils/numberFormat'
 import type { Token, TokenStatus } from '../types'
 import { Plus, Search, Inbox, FolderSearch, CheckSquare, X, SortAsc, BarChart3, Archive, ArchiveX } from 'lucide-react'
 import { Dropdown } from '../components/Dropdown'
@@ -248,39 +249,41 @@ export function TokensPage() {
 
       {/* Advanced Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        {/* 任务完成率 */}
+        {/* 总持仓价值 */}
         <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--border)] hover:border-[var(--border-hover)] transition-all">
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-9 h-9 bg-emerald-500/15 rounded-lg flex items-center justify-center">
-              <svg className="w-4.5 h-4.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="w-9 h-9 bg-blue-500/15 rounded-lg flex items-center justify-center">
+              <svg className="w-9 h-9 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs text-[var(--text-muted)] mb-0.5">任务完成率</div>
-              <div className="text-lg font-bold text-emerald-400">
-                {(() => {
-                  const totalTasks = tokens.reduce((acc, t) => acc + (t.tasks || []).length, 0)
-                  const completedTasks = tokens.reduce((acc, t) => acc + (t.tasks || []).filter(task => task.completed).length, 0)
-                  return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
-                })()}%
+              <div className="text-xs text-[var(--text-muted)] mb-0.5">总持仓价值</div>
+              <div className="text-lg font-bold text-blue-400">
+                ${(() => {
+                  const totalValue = tokens.reduce((acc, t) => {
+                    if (t.currentPrice && t.transactions) {
+                      // 计算持有数量
+                      let holdings = 0
+                      for (const tx of t.transactions) {
+                        if (tx.note) {
+                          const num = parseFloat(tx.note)
+                          if (!isNaN(num)) {
+                            holdings += tx.type === 'investment' ? num : -num
+                          }
+                        }
+                      }
+                      return acc + (holdings * t.currentPrice)
+                    }
+                    return acc
+                  }, 0)
+                  return totalValue > 0 ? formatCurrency(totalValue).replace('$', '') : '0'
+                })()}
               </div>
             </div>
           </div>
-          <div className="h-1.5 bg-emerald-500/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 transition-all duration-500"
-              style={{
-                width: `${(() => {
-                  const totalTasks = tokens.reduce((acc, t) => acc + (t.tasks || []).length, 0)
-                  const completedTasks = tokens.reduce((acc, t) => acc + (t.tasks || []).filter(task => task.completed).length, 0)
-                  return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
-                })()}%`
-              }}
-            />
-          </div>
-          <div className="text-xs text-[var(--text-muted)] mt-2">
-            {tokens.reduce((acc, t) => acc + (t.tasks || []).filter(task => task.completed).length, 0)} / {tokens.reduce((acc, t) => acc + (t.tasks || []).length, 0)} 任务
+          <div className="text-xs text-[var(--text-muted)]">
+            {tokens.filter(t => t.currentPrice && t.transactions && t.transactions.length > 0).length} 个代币有持仓
           </div>
         </div>
 
@@ -303,14 +306,14 @@ export function TokensPage() {
         {/* 即将到期 */}
         <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--border)] hover:border-[var(--border-hover)] transition-all">
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-9 h-9 bg-amber-500/15 rounded-lg flex items-center justify-center">
-              <svg className="w-4.5 h-4.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-9 h-9 bg-red-500/15 rounded-lg flex items-center justify-center">
+              <svg className="w-4.5 h-4.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xs text-[var(--text-muted)] mb-0.5">即将到期</div>
-              <div className="text-lg font-bold text-amber-400">
+              <div className="text-lg font-bold text-red-400">
                 {(() => {
                   const now = Date.now()
                   const oneWeek = 7 * 24 * 60 * 60 * 1000
