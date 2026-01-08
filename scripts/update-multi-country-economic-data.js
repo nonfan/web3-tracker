@@ -10,6 +10,45 @@
  * - 全球：World Bank API
  */
 
+import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+
+// 获取当前文件目录
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
+// 加载本地环境变量 (仅用于本地测试)
+function loadLocalEnv() {
+  try {
+    const envPath = join(__dirname, '..', '.env.local')
+    const envContent = readFileSync(envPath, 'utf8')
+    
+    envContent.split('\n').forEach(line => {
+      line = line.trim()
+      if (line && !line.startsWith('#')) {
+        const [key, ...valueParts] = line.split('=')
+        const value = valueParts.join('=')
+        if (key && value && !process.env[key]) {
+          process.env[key] = value
+        }
+      }
+    })
+    console.log('✓ Loaded local environment variables from .env.local')
+  } catch (error) {
+    // .env.local 文件不存在或无法读取，使用系统环境变量
+    console.log('ℹ Using system environment variables (no .env.local found)')
+  }
+}
+
+// 在GitHub Actions环境中不加载.env.local
+if (!process.env.GITHUB_ACTIONS) {
+  loadLocalEnv()
+}
+
+// 导入 fetch (Node.js 18+ 内置)
+// 如果需要兼容旧版本，可以使用: import fetch from 'node-fetch'
+
 // 获取环境变量
 const FRED_API_KEY = process.env.FRED_API_KEY?.trim()
 const GIST_TOKEN = process.env.GIST_TOKEN?.trim()
@@ -37,7 +76,7 @@ const COUNTRY_CONFIG = {
     currency: 'CNY',
     dataSources: ['WorldBank'],
     series: {
-      interestRate: 'FR.INR.RINR',
+      interestRate: 'FR.INR.DPST',  // 存款利率
       inflation: 'FP.CPI.TOTL.ZG',
       unemployment: 'SL.UEM.TOTL.ZS'
     }
@@ -47,7 +86,7 @@ const COUNTRY_CONFIG = {
     currency: 'EUR',
     dataSources: ['WorldBank'],
     series: {
-      interestRate: 'FR.INR.RINR',
+      interestRate: 'FR.INR.DPST',  // 存款利率
       inflation: 'FP.CPI.TOTL.ZG',
       unemployment: 'SL.UEM.TOTL.ZS'
     }
@@ -57,7 +96,7 @@ const COUNTRY_CONFIG = {
     currency: 'JPY',
     dataSources: ['WorldBank'],
     series: {
-      interestRate: 'FR.INR.RINR',
+      interestRate: 'FR.INR.DPST',  // 存款利率
       inflation: 'FP.CPI.TOTL.ZG',
       unemployment: 'SL.UEM.TOTL.ZS'
     }

@@ -19,6 +19,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史
+
+      - name: Debug - List files
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files in scripts directory:"
+          ls -la scripts/
+          echo "Checking if target file exists:"
+          ls -la scripts/update-multi-country-economic-data.js || echo "File not found"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
