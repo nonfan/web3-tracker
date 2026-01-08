@@ -1,4 +1,4 @@
-import { TrendingUp, Activity, Briefcase, Bitcoin, DollarSign } from 'lucide-react'
+import { TrendingUp, Activity, Briefcase, Bitcoin, DollarSign, AlertCircle } from 'lucide-react'
 
 interface DataCardProps {
   title: string
@@ -21,6 +21,49 @@ const iconMap = {
   'exchange-rate': DollarSign
 }
 
+const colorConfig = {
+  violet: {
+    bg: 'from-violet-500/10 to-purple-500/10',
+    border: 'border-violet-500/20',
+    icon: 'text-violet-600 dark:text-violet-400',
+    iconBg: 'bg-violet-500/20',
+    value: 'text-violet-700 dark:text-violet-300',
+    shadow: 'shadow-violet-500/10'
+  },
+  amber: {
+    bg: 'from-amber-500/10 to-orange-500/10',
+    border: 'border-amber-500/20',
+    icon: 'text-amber-600 dark:text-amber-400',
+    iconBg: 'bg-amber-500/20',
+    value: 'text-amber-700 dark:text-amber-300',
+    shadow: 'shadow-amber-500/10'
+  },
+  emerald: {
+    bg: 'from-emerald-500/10 to-teal-500/10',
+    border: 'border-emerald-500/20',
+    icon: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-emerald-500/20',
+    value: 'text-emerald-700 dark:text-emerald-300',
+    shadow: 'shadow-emerald-500/10'
+  },
+  blue: {
+    bg: 'from-blue-500/10 to-indigo-500/10',
+    border: 'border-blue-500/20',
+    icon: 'text-blue-600 dark:text-blue-400',
+    iconBg: 'bg-blue-500/20',
+    value: 'text-blue-700 dark:text-blue-300',
+    shadow: 'shadow-blue-500/10'
+  },
+  orange: {
+    bg: 'from-orange-500/10 to-red-500/10',
+    border: 'border-orange-500/20',
+    icon: 'text-orange-600 dark:text-orange-400',
+    iconBg: 'bg-orange-500/20',
+    value: 'text-orange-700 dark:text-orange-300',
+    shadow: 'shadow-orange-500/10'
+  }
+}
+
 // 格式化日期显示
 function formatDate(dateStr: string): string {
   const [year, month] = dateStr.split('-')
@@ -41,10 +84,11 @@ export function DataCard({
   subtitle
 }: DataCardProps) {
   const Icon = icon ? iconMap[icon] : null
+  const colors = colorConfig[color]
   
   const defaultFormatter = (v: number) => {
     if (unit === 'T') {
-      return `$${v.toFixed(2)}${unit}`
+      return `${v.toFixed(2)}${unit}`
     }
     return `${v.toFixed(unit === '%' ? 2 : 1)}${unit}`
   }
@@ -53,69 +97,63 @@ export function DataCard({
   
   if (loading) {
     return (
-      <div className={`${
-        color === 'violet' ? 'bg-violet-500/10 border-violet-500/20' :
-        color === 'amber' ? 'bg-amber-500/10 border-amber-500/20' :
-        color === 'emerald' ? 'bg-emerald-500/10 border-emerald-500/20' :
-        color === 'blue' ? 'bg-blue-500/10 border-blue-500/20' :
-        color === 'orange' ? 'bg-orange-500/10 border-orange-500/20' :
-        'bg-blue-500/10 border-blue-500/20'
-      } rounded-xl p-4 animate-pulse`}>
-        <div className="flex items-center gap-2 mb-2">
-          {Icon && <Icon className="w-4 h-4 text-[var(--border)]" />}
-          <div className="h-4 bg-[var(--border)] rounded w-20"></div>
+      <div className={`bg-gradient-to-br ${colors.bg} ${colors.border} border rounded-2xl p-6 animate-pulse shadow-lg ${colors.shadow}`}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`w-10 h-10 ${colors.iconBg} rounded-xl flex items-center justify-center`}>
+            {Icon && <Icon className={`w-5 h-5 ${colors.icon}`} />}
+          </div>
+          <div className="flex-1">
+            <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded w-24 mb-1"></div>
+            <div className="h-3 bg-slate-200 dark:bg-slate-600 rounded w-16"></div>
+          </div>
         </div>
-        <div className="h-8 bg-[var(--border)] rounded w-24 mb-1"></div>
-        <div className="h-3 bg-[var(--border)] rounded w-16"></div>
+        <div className="h-10 bg-slate-200 dark:bg-slate-600 rounded w-32 mb-2"></div>
+        <div className="h-3 bg-slate-200 dark:bg-slate-600 rounded w-20"></div>
       </div>
     )
   }
   
   if (error) {
     return (
-      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-2">
-          {Icon && <Icon className="w-4 h-4 text-red-400" />}
-          <div className="text-xs text-red-400 font-medium">{title}</div>
+      <div className="bg-gradient-to-br from-red-500/10 to-pink-500/10 border border-red-500/20 rounded-2xl p-6 shadow-lg shadow-red-500/10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+          </div>
+          <div className="flex-1">
+            <div className="font-semibold text-red-700 dark:text-red-300">{title}</div>
+            <div className="text-sm text-red-600 dark:text-red-400">数据加载失败</div>
+          </div>
         </div>
-        <div className="text-sm text-red-400">加载失败</div>
-        <div className="text-xs text-red-300 mt-1">{error}</div>
+        <div className="text-2xl font-bold text-red-700 dark:text-red-300 mb-2">--</div>
+        <div className="text-xs text-red-600 dark:text-red-400">{error}</div>
       </div>
     )
   }
   
   return (
-    <div className={`${
-      color === 'violet' ? 'bg-violet-500/10 border-violet-500/20' :
-      color === 'amber' ? 'bg-amber-500/10 border-amber-500/20' :
-      color === 'emerald' ? 'bg-emerald-500/10 border-emerald-500/20' :
-      color === 'blue' ? 'bg-blue-500/10 border-blue-500/20' :
-      color === 'orange' ? 'bg-orange-500/10 border-orange-500/20' :
-      'bg-blue-500/10 border-blue-500/20'
-    } rounded-xl p-4 transition-all hover:scale-[1.02]`}>
-      <div className="flex items-center gap-2 mb-2">
-        {Icon && <Icon className={`w-4 h-4 ${
-          color === 'violet' ? 'text-violet-400' :
-          color === 'amber' ? 'text-amber-400' :
-          color === 'emerald' ? 'text-emerald-400' :
-          color === 'blue' ? 'text-blue-400' :
-          color === 'orange' ? 'text-orange-400' :
-          'text-blue-400'
-        }`} />}
-        <div className="text-xs text-[var(--text-muted)] font-medium">{title}</div>
+    <div className={`bg-gradient-to-br ${colors.bg} ${colors.border} border rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${colors.shadow} backdrop-blur-sm`}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className={`w-10 h-10 ${colors.iconBg} rounded-xl flex items-center justify-center shadow-lg`}>
+          {Icon && <Icon className={`w-5 h-5 ${colors.icon}`} />}
+        </div>
+        <div className="flex-1">
+          <div className="font-semibold text-slate-700 dark:text-slate-300">{title}</div>
+          <div className="text-sm text-slate-500 dark:text-slate-500">
+            {subtitle || (date ? formatDate(date) : '暂无数据')}
+          </div>
+        </div>
       </div>
-      <div className={`text-3xl font-bold ${
-        color === 'violet' ? 'text-violet-400' :
-        color === 'amber' ? 'text-amber-400' :
-        color === 'emerald' ? 'text-emerald-400' :
-        color === 'blue' ? 'text-blue-400' :
-        color === 'orange' ? 'text-orange-400' :
-        'text-blue-400'
-      }`}>
+      
+      <div className={`text-3xl font-bold ${colors.value} mb-2`}>
         {value !== null && value !== undefined ? formatValue(value) : '--'}
       </div>
-      <div className="text-xs text-[var(--text-muted)] mt-1">
-        {subtitle || (date ? formatDate(date) : '暂无数据')}
+      
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-slate-500 dark:text-slate-500">
+          最新数据
+        </div>
+        <div className={`w-2 h-2 ${colors.iconBg} rounded-full`}></div>
       </div>
     </div>
   )
