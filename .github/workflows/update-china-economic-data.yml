@@ -1,0 +1,50 @@
+name: Update China Economic Data
+
+on:
+  schedule:
+    # 每天 UTC 时间 03:00 运行（北京时间11:00）
+    - cron: '0 3 * * *'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  update-china-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Debug - List files
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files in scripts directory:"
+          ls -la scripts/
+          echo "Checking if China script exists:"
+          ls -la scripts/update-china-economic-data.cjs || echo "China script not found"
+
+      - name: Update China economic data
+        env:
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+        run: node scripts/update-china-economic-data.cjs
+
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "✅ China economic data updated successfully!"
+          echo "Updated indicators: M2货币供应量, DR007利率, 逆回购利率, USD/CNY汇率, 社会融资规模"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ China economic data update failed!"
+          echo "Please check the logs for details."

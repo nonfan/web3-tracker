@@ -76,7 +76,7 @@ const COUNTRY_CONFIG = {
     currency: 'CNY',
     dataSources: ['WorldBank'],
     series: {
-      interestRate: 'FR.INR.DPST',  // 存款利率
+      interestRate: 'FR.INR.RINR',  // 实际利率
       inflation: 'FP.CPI.TOTL.ZG',
       unemployment: 'SL.UEM.TOTL.ZS'
     }
@@ -86,7 +86,7 @@ const COUNTRY_CONFIG = {
     currency: 'EUR',
     dataSources: ['WorldBank'],
     series: {
-      interestRate: 'FR.INR.DPST',  // 存款利率
+      interestRate: 'FR.INR.RINR',  // 实际利率
       inflation: 'FP.CPI.TOTL.ZG',
       unemployment: 'SL.UEM.TOTL.ZS'
     }
@@ -96,7 +96,7 @@ const COUNTRY_CONFIG = {
     currency: 'JPY',
     dataSources: ['WorldBank'],
     series: {
-      interestRate: 'FR.INR.DPST',  // 存款利率
+      interestRate: 'FR.INR.RINR',  // 实际利率
       inflation: 'FP.CPI.TOTL.ZG',
       unemployment: 'SL.UEM.TOTL.ZS'
     }

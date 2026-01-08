@@ -68,7 +68,7 @@ const COUNTRY_CONFIG = {
     currency: 'CNY',
     dataSources: ['WorldBank'],
     series: {
-      interestRate: 'FR.INR.DPST',  // 存款利率
+      interestRate: 'FR.INR.RINR',  // 实际利率
       inflation: 'FP.CPI.TOTL.ZG',
       unemployment: 'SL.UEM.TOTL.ZS'
     }
@@ -78,7 +78,7 @@ const COUNTRY_CONFIG = {
     currency: 'EUR',
     dataSources: ['WorldBank'],
     series: {
-      interestRate: 'FR.INR.DPST',  // 存款利率
+      interestRate: 'FR.INR.RINR',  // 实际利率
       inflation: 'FP.CPI.TOTL.ZG',
       unemployment: 'SL.UEM.TOTL.ZS'
     }
@@ -88,7 +88,7 @@ const COUNTRY_CONFIG = {
     currency: 'JPY',
     dataSources: ['WorldBank'],
     series: {
-      interestRate: 'FR.INR.DPST',  // 存款利率
+      interestRate: 'FR.INR.RINR',  // 实际利率
       inflation: 'FP.CPI.TOTL.ZG',
       unemployment: 'SL.UEM.TOTL.ZS'
     }
@@ -136,9 +136,9 @@ async function fetchFredData(seriesId, countryCode) {
 async function fetchWorldBankData(indicator, countryCode) {
   try {
     const currentYear = new Date().getFullYear()
-    const startYear = currentYear - 5
+    const startYear = currentYear - 10 // 增加到10年数据
     
-    const url = `${WORLD_BANK_API_BASE}/country/${countryCode.toLowerCase()}/indicator/${indicator}?date=${startYear}:${currentYear}&format=json&per_page=100`
+    const url = `${WORLD_BANK_API_BASE}/country/${countryCode.toLowerCase()}/indicator/${indicator}?date=${startYear}:${currentYear}&format=json&per_page=200`
     
     console.log(`Fetching World Bank data for ${countryCode}: ${indicator}`)
     
@@ -161,14 +161,16 @@ async function fetchWorldBankData(indicator, countryCode) {
       return []
     }
     
-    return observations
-      .filter(obs => obs.value !== null)
+    const processedData = observations
+      .filter(obs => obs.value !== null && obs.value !== undefined)
       .map(obs => ({
         date: `${obs.date}-12`, // 年度数据，设为12月
         value: parseFloat(obs.value)
       }))
       .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-36) // 最多保留36个月
+    
+    console.log(`✓ Got ${processedData.length} data points for ${countryCode}: ${indicator}`)
+    return processedData.slice(-60) // 最多保留60个月
   } catch (error) {
     console.error(`Error fetching World Bank data for ${countryCode}:`, error.message)
     return []
@@ -264,14 +266,32 @@ async function fetchCountryData(countryCode) {
       countryData.inflation = inflation
       countryData.unemployment = unemployment
     } else {
-      // 其他国家使用世界银行 API
-      const [interestRate, inflation, unemployment] = await Promise.all([
-        fetchWorldBankData(config.series.interestRate, countryCode),
+      // 其他国家使用世界银行 API，尝试多个利率指标
+      const interestRateIndicators = [
+        'FR.INR.RINR',  // 实际利率
+        'FR.INR.DPST',  // 存款利率
+        'FR.INR.LEND',  // 贷款利率
+      ]
+      
+      let interestRateData = []
+      
+      // 尝试不同的利率指标，直到找到有数据的
+      for (const indicator of interestRateIndicators) {
+        console.log(`Trying interest rate indicator ${indicator} for ${countryCode}`)
+        const data = await fetchWorldBankData(indicator, countryCode)
+        if (data.length > 0) {
+          interestRateData = data
+          console.log(`✓ Found ${data.length} interest rate data points using ${indicator}`)
+          break
+        }
+      }
+      
+      const [inflation, unemployment] = await Promise.all([
         fetchWorldBankData(config.series.inflation, countryCode),
         fetchWorldBankData(config.series.unemployment, countryCode)
       ])
       
-      countryData.interestRate = interestRate
+      countryData.interestRate = interestRateData
       countryData.inflation = inflation
       countryData.unemployment = unemployment
     }
