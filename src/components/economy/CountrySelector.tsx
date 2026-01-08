@@ -52,18 +52,6 @@ export function CountrySelector({ selectedCountry, onCountryChange }: CountrySel
           </button>
         ))}
       </div>
-      
-      {selectedCountry !== 'US' && (
-        <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-          <div className="flex items-center gap-2 text-amber-400 text-sm">
-            <div className="w-2 h-2 rounded-full bg-amber-400"></div>
-            <span className="font-medium">数据开发中</span>
-          </div>
-          <p className="text-xs text-[var(--text-muted)] mt-1">
-            {currentCountry.name}的经济数据正在开发中，目前仅支持美国数据。加密货币市场数据对所有地区可用。
-          </p>
-        </div>
-      )}
     </div>
   )
 }
