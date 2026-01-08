@@ -1,0 +1,27 @@
+name: Update US Economic Data
+
+on:
+  schedule:
+    # 每天 UTC 14:00 运行 (北京时间 22:00)
+    - cron: '0 14 * * *'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  update-us-economic-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Run US economic data update script
+      run: node scripts/update-us-economic-data.js
+      env:
+        FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+        ECONOMIC_GIST_ID: ${{ secrets.ECONOMIC_GIST_ID }}

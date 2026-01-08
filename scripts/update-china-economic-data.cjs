@@ -46,7 +46,7 @@ if (!process.env.GITHUB_ACTIONS) {
 
 // 获取环境变量
 const GIST_TOKEN = process.env.GIST_TOKEN?.trim()
-const GIST_ID = process.env.GIST_ID?.trim()
+const ECONOMIC_GIST_ID = process.env.ECONOMIC_GIST_ID?.trim()
 const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY?.trim()
 
 // 中国经济数据配置
@@ -248,8 +248,8 @@ function generateSimulatedUsdCnyData() {
  * 更新 Gist 中的中国经济数据
  */
 async function updateChinaDataToGist(chinaData) {
-  if (!GIST_TOKEN || !GIST_ID) {
-    console.error('Missing GIST_TOKEN or GIST_ID')
+  if (!GIST_TOKEN || !ECONOMIC_GIST_ID) {
+    console.error('Missing GIST_TOKEN or ECONOMIC_GIST_ID')
     return false
   }
 
@@ -257,7 +257,7 @@ async function updateChinaDataToGist(chinaData) {
     console.log('💾 Updating China economic data to Gist...')
     
     // 读取现有 Gist 内容
-    const gistUrl = `https://api.github.com/gists/${GIST_ID}`
+    const gistUrl = `https://api.github.com/gists/${ECONOMIC_GIST_ID}`
     const getResponse = await fetch(gistUrl, {
       headers: {
         'Authorization': `Bearer ${GIST_TOKEN}`,
@@ -337,8 +337,8 @@ async function main() {
   console.log('='.repeat(60))
 
   // 检查环境变量
-  if (!GIST_TOKEN || !GIST_ID) {
-    console.error('✗ GIST_TOKEN and GIST_ID are required')
+  if (!GIST_TOKEN || !ECONOMIC_GIST_ID) {
+    console.error('✗ GIST_TOKEN and ECONOMIC_GIST_ID are required')
     process.exit(1)
   }
 

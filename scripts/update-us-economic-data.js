@@ -1,5 +1,5 @@
 /**
- * GitHub Actions 脚本：使用 FRED API 自动获取经济数据并更新到 Gist
+ * GitHub Actions 脚本：使用 FRED API 自动获取美国经济数据并更新到经济专用 Gist
  * 运行频率：每天一次
  * 
  * FRED API 文档：https://fred.stlouisfed.org/docs/api/fred/
@@ -14,7 +14,7 @@
 // 获取环境变量并清理可能的空格/换行符
 const FRED_API_KEY = process.env.FRED_API_KEY?.trim()
 const GIST_TOKEN = process.env.GIST_TOKEN?.trim()
-const GIST_ID = process.env.GIST_ID?.trim()
+const ECONOMIC_GIST_ID = process.env.ECONOMIC_GIST_ID?.trim()
 
 const FRED_API_BASE = 'https://api.stlouisfed.org/fred'
 
@@ -137,9 +137,9 @@ function processObservations(observations, seriesId) {
   return sortedData.slice(-60) // 最多保留60个月
 }
 
-// 获取所有经济数据
-async function fetchAllEconomicData() {
-  console.log('Fetching data from FRED API...')
+// 获取所有美国经济数据
+async function fetchAllUSEconomicData() {
+  console.log('📈 Fetching US economic data from FRED API...')
   
   const [fedRate, inflation, unemployment] = await Promise.all([
     fetchFredSeries(SERIES_IDS.fedRate, 'Federal Funds Rate'),
@@ -150,15 +150,68 @@ async function fetchAllEconomicData() {
   return { fedRate, inflation, unemployment }
 }
 
-// 更新 Gist
-async function updateGist(data) {
-  if (!GIST_TOKEN || !GIST_ID) {
-    console.error('Missing GIST_TOKEN or GIST_ID')
+// 更新经济专用 Gist
+async function updateEconomicGist(usData) {
+  if (!GIST_TOKEN || !ECONOMIC_GIST_ID) {
+    console.error('Missing GIST_TOKEN or ECONOMIC_GIST_ID')
     return false
   }
 
   try {
-    const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+    console.log('💾 Updating US economic data to economic Gist...')
+    
+    // 首先获取现有的 Gist 内容
+    const getResponse = await fetch(`https://api.github.com/gists/${ECONOMIC_GIST_ID}`, {
+      headers: {
+        'Authorization': `token ${GIST_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    })
+    
+    let existingData = {}
+    if (getResponse.ok) {
+      const gistData = await getResponse.json()
+      const economicFile = gistData.files['economic-data.json']?.content
+      if (economicFile) {
+        try {
+          existingData = JSON.parse(economicFile)
+        } catch (e) {
+          console.log('Creating new economic data structure')
+        }
+      }
+    }
+    
+    // 更新美国数据部分
+    const updatedData = {
+      ...existingData,
+      lastUpdate: new Date().toISOString(),
+      usEconomicData: {
+        lastUpdate: new Date().toISOString(),
+        country: 'US',
+        name: '美国',
+        currency: 'USD',
+        data: usData,
+        indicators: {
+          fedRate: {
+            name: '联邦基金利率',
+            unit: '%',
+            description: 'Federal Funds Effective Rate'
+          },
+          inflation: {
+            name: 'CPI通胀率',
+            unit: '%',
+            description: 'Consumer Price Index Year-over-Year Change'
+          },
+          unemployment: {
+            name: '失业率',
+            unit: '%',
+            description: 'Unemployment Rate'
+          }
+        }
+      }
+    }
+    
+    const response = await fetch(`https://api.github.com/gists/${ECONOMIC_GIST_ID}`, {
       method: 'PATCH',
       headers: {
         'Authorization': `token ${GIST_TOKEN}`,
@@ -167,33 +220,31 @@ async function updateGist(data) {
       body: JSON.stringify({
         files: {
           'economic-data.json': {
-            content: JSON.stringify({
-              lastUpdate: new Date().toISOString(),
-              data
-            }, null, 2)
+            content: JSON.stringify(updatedData, null, 2)
           }
         }
       })
     })
 
     if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`)
+      const errorText = await response.text()
+      throw new Error(`GitHub API error: ${response.status} - ${errorText}`)
     }
 
-    console.log('✓ Gist updated successfully')
+    console.log('✅ US economic data updated to economic Gist successfully')
     return true
   } catch (error) {
-    console.error('Error updating Gist:', error)
+    console.error('❌ Error updating economic Gist:', error)
     return false
   }
 }
 
 // 主函数
 async function main() {
-  console.log('='.repeat(50))
-  console.log('Starting FRED Economic Data Update')
+  console.log('='.repeat(60))
+  console.log('Starting US Economic Data Update')
   console.log(`Time: ${new Date().toISOString()}`)
-  console.log('='.repeat(50))
+  console.log('='.repeat(60))
 
   // 检查必需的环境变量
   if (!FRED_API_KEY) {
@@ -209,13 +260,13 @@ async function main() {
     console.warn(`Received: ${FRED_API_KEY.length} characters`)
   }
 
-  if (!GIST_TOKEN || !GIST_ID) {
-    console.error('✗ GIST_TOKEN and GIST_ID are required')
+  if (!GIST_TOKEN || !ECONOMIC_GIST_ID) {
+    console.error('✗ GIST_TOKEN and ECONOMIC_GIST_ID are required')
     process.exit(1)
   }
 
-  // 获取所有数据
-  const { fedRate, inflation, unemployment } = await fetchAllEconomicData()
+  // 获取所有美国数据
+  const { fedRate, inflation, unemployment } = await fetchAllUSEconomicData()
 
   // 检查是否有数据
   if (!fedRate && !inflation && !unemployment) {
@@ -223,26 +274,27 @@ async function main() {
     process.exit(1)
   }
 
-  console.log('\nData Summary:')
-  console.log(`- Fed Rate: ${fedRate ? fedRate.length : 0} points`)
-  console.log(`- Inflation: ${inflation ? inflation.length : 0} points`)
-  console.log(`- Unemployment: ${unemployment ? unemployment.length : 0} points`)
+  console.log('\n📊 US Economic Data Summary:')
+  console.log(`联邦基金利率: ${fedRate ? fedRate.length : 0} points`)
+  console.log(`CPI通胀率: ${inflation ? inflation.length : 0} points`)
+  console.log(`失业率: ${unemployment ? unemployment.length : 0} points`)
 
-  // 更新 Gist
-  console.log('\nUpdating GitHub Gist...')
-  const success = await updateGist({
+  // 更新经济专用 Gist
+  console.log('\n💾 Updating to Economic Gist...')
+  const success = await updateEconomicGist({
     fedRate: fedRate || [],
     inflation: inflation || [],
     unemployment: unemployment || []
   })
 
   if (success) {
-    console.log('\n' + '='.repeat(50))
-    console.log('✓ Economic data updated successfully!')
-    console.log('='.repeat(50))
+    console.log('\n' + '='.repeat(60))
+    console.log('✅ US economic data updated successfully!')
+    console.log('Updated indicators: 联邦基金利率, CPI通胀率, 失业率')
+    console.log('='.repeat(60))
     process.exit(0)
   } else {
-    console.error('\n✗ Failed to update Gist')
+    console.error('\n✗ Failed to update economic Gist')
     process.exit(1)
   }
 }

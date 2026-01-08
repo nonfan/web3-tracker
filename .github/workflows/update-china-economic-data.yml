@@ -33,7 +33,7 @@ jobs:
       - name: Update China economic data
         env:
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
-          GIST_ID: ${{ secrets.GIST_ID }}
+          ECONOMIC_GIST_ID: ${{ secrets.ECONOMIC_GIST_ID }}
           ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
         run: node scripts/update-china-economic-data.cjs
 
