@@ -1,33 +1,14 @@
-import { useEffect, useState } from 'react'
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts'
 import { TrendingUp, TrendingDown, Minus, Settings, AlertCircle } from 'lucide-react'
-import { getFedRateData, type FedRateData } from '../../utils/economicDataApi'
+import { type FedRateData } from '../../utils/economicDataApi'
 
-export function FedRateChart() {
-  const [fedRateData, setFedRateData] = useState<FedRateData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+interface FedRateChartProps {
+  data: FedRateData[]
+  loading?: boolean
+  error?: string | null
+}
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const data = await getFedRateData()
-        if (data.length === 0) {
-          setError('no-data')
-        } else {
-          setFedRateData(data)
-        }
-      } catch (err) {
-        console.error('Failed to load Fed rate data:', err)
-        setError('load-error')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadData()
-  }, [])
+export function FedRateChart({ data: fedRateData, loading: isLoading = false, error = null }: FedRateChartProps) {
 
   // 加载状态
   if (isLoading) {
@@ -41,8 +22,31 @@ export function FedRateChart() {
     )
   }
 
+  // 错误状态
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">加载失败</h3>
+          <p className="text-sm text-[var(--text-secondary)] mb-4">
+            {error}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg transition-colors border border-[var(--border)]"
+          >
+            重新加载
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   // 无数据状态
-  if (error === 'no-data' || fedRateData.length === 0) {
+  if (!fedRateData || fedRateData.length === 0) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center max-w-md">
@@ -54,34 +58,17 @@ export function FedRateChart() {
             请配置经济数据源以查看美联储利率走势
           </p>
           <button
-            onClick={() => window.location.hash = '#/economy?tab=settings'}
+            onClick={() => {
+              // 触发 Gist 设置面板打开
+              const gistButton = document.querySelector('[data-gist-settings]') as HTMLButtonElement
+              if (gistButton) {
+                gistButton.click()
+              }
+            }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg transition-colors"
           >
             <Settings className="w-4 h-4" />
             前往配置
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // 错误状态
-  if (error === 'load-error') {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">加载失败</h3>
-          <p className="text-sm text-[var(--text-secondary)] mb-4">
-            无法加载经济数据，请检查网络连接或数据源配置
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg transition-colors border border-[var(--border)]"
-          >
-            重新加载
           </button>
         </div>
       </div>

@@ -2,151 +2,134 @@ import { useState, useEffect } from 'react'
 import { FedRateChart } from '../components/economy/FedRateChart'
 import { InflationChart } from '../components/economy/InflationChart'
 import { UnemploymentChart } from '../components/economy/UnemploymentChart'
-import { CryptoMarketChart } from '../components/economy/CryptoMarketChart'
-import { DataSourceConfig } from '../components/economy/DataSourceConfig'
-import { getFedRateData, getInflationData, getUnemploymentData, getCryptoMarketData } from '../utils/economicDataApi'
-import { TrendingUp, Activity, Briefcase, Bitcoin, Settings } from 'lucide-react'
+import { DataCard } from '../components/economy/DataCard'
+import { CountrySelector } from '../components/economy/CountrySelector'
+import { useEconomicStore } from '../store/economicStore'
+import { useAutoRefresh, useVisibilityRefresh } from '../hooks/useAutoRefresh'
+import { TrendingUp, Activity, Briefcase } from 'lucide-react'
 
-type ChartType = 'fed-rate' | 'inflation' | 'unemployment' | 'crypto-market' | 'settings'
-
-// 格式化日期显示
-function formatDate(dateStr: string): string {
-  const [year, month] = dateStr.split('-')
-  const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
-  return `${year}年${monthNames[parseInt(month) - 1]}`
-}
+type ChartType = 'fed-rate' | 'inflation' | 'unemployment'
 
 export function EconomyPage() {
   const [activeChart, setActiveChart] = useState<ChartType>('fed-rate')
-  const [fedRate, setFedRate] = useState<number | null>(null)
-  const [fedRateDate, setFedRateDate] = useState<string | null>(null)
-  const [inflation, setInflation] = useState<number | null>(null)
-  const [inflationDate, setInflationDate] = useState<string | null>(null)
-  const [unemployment, setUnemployment] = useState<number | null>(null)
-  const [unemploymentDate, setUnemploymentDate] = useState<string | null>(null)
-  const [cryptoTotalMarketCap, setCryptoTotalMarketCap] = useState<number | null>(null)
-  const [cryptoDate, setCryptoDate] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  // 检查 URL 参数，如果有 tab=settings 则跳转到设置
+  
+  // 使用全局状态管理
+  const {
+    // 数据状态
+    fedRateData,
+    inflationData,
+    unemploymentData,
+    
+    // 元数据
+    isLoading,
+    errors,
+    selectedCountry,
+    
+    // 操作方法
+    setSelectedCountry,
+    refreshAllData,
+    
+    // 便捷方法
+    getLatestFedRate,
+    getLatestInflation,
+    getLatestUnemployment
+  } = useEconomicStore()
+  
+  // 自动刷新数据
+  useAutoRefresh()
+  useVisibilityRefresh()
+  
+  // 页面加载时确保数据已加载
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('tab') === 'settings') {
-      setActiveChart('settings')
+    // 如果没有任何数据，立即刷新
+    if (fedRateData.length === 0 && inflationData.length === 0 && 
+        unemploymentData.length === 0) {
+      console.log('📊 Initial data load for EconomyPage')
+      refreshAllData()
     }
-  }, [])
-
-  // 加载真实数据
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      try {
-        const fedData = await getFedRateData()
-        if (fedData.length > 0) {
-          const latest = fedData[fedData.length - 1]
-          setFedRate(latest.rate)
-          setFedRateDate(latest.date)
-        }
-
-        const inflationData = await getInflationData()
-        if (inflationData.length > 0) {
-          const latest = inflationData[inflationData.length - 1]
-          setInflation(latest.value)
-          setInflationDate(latest.date)
-        }
-
-        const unemploymentData = await getUnemploymentData()
-        if (unemploymentData.length > 0) {
-          const latest = unemploymentData[unemploymentData.length - 1]
-          setUnemployment(latest.value)
-          setUnemploymentDate(latest.date)
-        }
-
-        const cryptoData = await getCryptoMarketData()
-        if (cryptoData.length > 0) {
-          const latest = cryptoData[cryptoData.length - 1]
-          setCryptoTotalMarketCap(latest.total)
-          setCryptoDate(latest.date)
-        }
-      } catch (error) {
-        console.error('Failed to load economic data:', error)
-      } finally {
-        setIsLoading(false)
-      }
+  }, [refreshAllData, fedRateData.length, inflationData.length, unemploymentData.length])
+  
+  // 获取最新数据
+  const latestFedRate = getLatestFedRate()
+  const latestInflation = getLatestInflation()
+  const latestUnemployment = getLatestUnemployment()
+  
+  // 根据选中的国家调整图表标签
+  const getChartLabel = (chartId: ChartType) => {
+    const baseLabels = {
+      'fed-rate': selectedCountry === 'US' ? '美联储利率' : 
+                  selectedCountry === 'CN' ? '央行利率' :
+                  selectedCountry === 'EU' ? '欧央行利率' :
+                  selectedCountry === 'JP' ? '日银利率' :
+                  selectedCountry === 'UK' ? '英银利率' :
+                  selectedCountry === 'CA' ? '加银利率' :
+                  selectedCountry === 'AU' ? '澳储行利率' :
+                  selectedCountry === 'DE' ? '德银利率' : '基准利率',
+      'inflation': '通胀率',
+      'unemployment': '失业率'
     }
-
-    loadData()
-  }, [])
+    return baseLabels[chartId]
+  }
 
   const charts = [
-    { id: 'fed-rate' as ChartType, label: '美联储利率', icon: TrendingUp, color: 'violet' },
-    { id: 'inflation' as ChartType, label: '通胀率', icon: Activity, color: 'amber' },
-    { id: 'unemployment' as ChartType, label: '失业率', icon: Briefcase, color: 'emerald' },
-    { id: 'crypto-market' as ChartType, label: '加密市场', icon: Bitcoin, color: 'blue' },
-    { id: 'settings' as ChartType, label: '数据源配置', icon: Settings, color: 'slate' },
+    { id: 'fed-rate' as ChartType, label: getChartLabel('fed-rate'), icon: TrendingUp, color: 'violet' },
+    { id: 'inflation' as ChartType, label: getChartLabel('inflation'), icon: Activity, color: 'amber' },
+    { id: 'unemployment' as ChartType, label: getChartLabel('unemployment'), icon: Briefcase, color: 'emerald' },
   ]
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-6">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">宏观经济数据</h1>
-        <p className="text-[var(--text-secondary)]">实时追踪关键经济指标，辅助投资决策</p>
+      {/* Country Navigation */}
+      <CountrySelector 
+        selectedCountry={selectedCountry}
+        onCountryChange={setSelectedCountry}
+      />
+
+      {/* Stats Overview - 使用统一数据源 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <DataCard
+          title={selectedCountry === 'US' ? '当前利率' : 
+                 selectedCountry === 'CN' ? '基准利率' :
+                 selectedCountry === 'EU' ? '主要再融资利率' :
+                 selectedCountry === 'JP' ? '政策利率' :
+                 selectedCountry === 'UK' ? '银行利率' :
+                 selectedCountry === 'CA' ? '隔夜利率' :
+                 selectedCountry === 'AU' ? '现金利率' :
+                 selectedCountry === 'DE' ? '基准利率' : '基准利率'}
+          value={selectedCountry === 'US' ? latestFedRate?.rate : null}
+          date={selectedCountry === 'US' ? latestFedRate?.date : null}
+          unit="%"
+          loading={isLoading.fedRate}
+          error={errors.fedRate}
+          color="violet"
+          icon="fed-rate"
+        />
+        
+        <DataCard
+          title="通胀率"
+          value={selectedCountry === 'US' ? latestInflation?.value : null}
+          date={selectedCountry === 'US' ? latestInflation?.date : null}
+          unit="%"
+          loading={isLoading.inflation}
+          error={errors.inflation}
+          color="amber"
+          icon="inflation"
+        />
+        
+        <DataCard
+          title="失业率"
+          value={selectedCountry === 'US' ? latestUnemployment?.value : null}
+          date={selectedCountry === 'US' ? latestUnemployment?.date : null}
+          unit="%"
+          loading={isLoading.unemployment}
+          error={errors.unemployment}
+          color="emerald"
+          icon="unemployment"
+        />
       </div>
 
-      {/* Stats Overview - 真实数据 */}
-      {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 animate-pulse">
-              <div className="h-4 bg-[var(--border)] rounded w-20 mb-2"></div>
-              <div className="h-8 bg-[var(--border)] rounded w-24 mb-1"></div>
-              <div className="h-3 bg-[var(--border)] rounded w-16"></div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4 transition-all hover:scale-[1.02]">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-violet-400" />
-              <div className="text-xs text-[var(--text-muted)] font-medium">当前利率</div>
-            </div>
-            <div className="text-3xl font-bold text-violet-400">{fedRate?.toFixed(2)}%</div>
-            <div className="text-xs text-[var(--text-muted)] mt-1">{fedRateDate ? formatDate(fedRateDate) : '-'}</div>
-          </div>
-
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 transition-all hover:scale-[1.02]">
-            <div className="flex items-center gap-2 mb-2">
-              <Activity className="w-4 h-4 text-amber-400" />
-              <div className="text-xs text-[var(--text-muted)] font-medium">通胀率</div>
-            </div>
-            <div className="text-3xl font-bold text-amber-400">{inflation?.toFixed(1)}%</div>
-            <div className="text-xs text-[var(--text-muted)] mt-1">{inflationDate ? formatDate(inflationDate) : '-'}</div>
-          </div>
-
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 transition-all hover:scale-[1.02]">
-            <div className="flex items-center gap-2 mb-2">
-              <Briefcase className="w-4 h-4 text-emerald-400" />
-              <div className="text-xs text-[var(--text-muted)] font-medium">失业率</div>
-            </div>
-            <div className="text-3xl font-bold text-emerald-400">{unemployment?.toFixed(1)}%</div>
-            <div className="text-xs text-[var(--text-muted)] mt-1">{unemploymentDate ? formatDate(unemploymentDate) : '-'}</div>
-          </div>
-
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 transition-all hover:scale-[1.02]">
-            <div className="flex items-center gap-2 mb-2">
-              <Bitcoin className="w-4 h-4 text-blue-400" />
-              <div className="text-xs text-[var(--text-muted)] font-medium">加密总市值</div>
-            </div>
-            <div className="text-3xl font-bold text-blue-400">${cryptoTotalMarketCap?.toFixed(2)}T</div>
-            <div className="text-xs text-[var(--text-muted)] mt-1">{cryptoDate ? formatDate(cryptoDate) : '-'}</div>
-          </div>
-        </div>
-      )}
-
       {/* Chart Selector */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {charts.map((chart) => {
           const Icon = chart.icon
           const isActive = activeChart === chart.id
@@ -179,11 +162,65 @@ export function EconomyPage() {
 
       {/* Chart Display */}
       <div className="bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-6">
-        {activeChart === 'fed-rate' && <FedRateChart />}
-        {activeChart === 'inflation' && <InflationChart />}
-        {activeChart === 'unemployment' && <UnemploymentChart />}
-        {activeChart === 'crypto-market' && <CryptoMarketChart />}
-        {activeChart === 'settings' && <DataSourceConfig />}
+        {selectedCountry === 'US' ? (
+          <>
+            {activeChart === 'fed-rate' && (
+              <FedRateChart 
+                data={fedRateData}
+                loading={isLoading.fedRate}
+                error={errors.fedRate}
+              />
+            )}
+            {activeChart === 'inflation' && (
+              <InflationChart 
+                data={inflationData}
+                loading={isLoading.inflation}
+                error={errors.inflation}
+              />
+            )}
+            {activeChart === 'unemployment' && (
+              <UnemploymentChart 
+                data={unemploymentData}
+                loading={isLoading.unemployment}
+                error={errors.unemployment}
+              />
+            )}
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">
+              {selectedCountry === 'CN' ? '🇨🇳' :
+               selectedCountry === 'EU' ? '🇪🇺' :
+               selectedCountry === 'JP' ? '🇯🇵' :
+               selectedCountry === 'UK' ? '🇬🇧' :
+               selectedCountry === 'CA' ? '🇨🇦' :
+               selectedCountry === 'AU' ? '🇦🇺' :
+               selectedCountry === 'DE' ? '🇩🇪' : '🏳️'}
+            </div>
+            <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
+              {selectedCountry === 'CN' ? '中国' :
+               selectedCountry === 'EU' ? '欧盟' :
+               selectedCountry === 'JP' ? '日本' :
+               selectedCountry === 'UK' ? '英国' :
+               selectedCountry === 'CA' ? '加拿大' :
+               selectedCountry === 'AU' ? '澳大利亚' :
+               selectedCountry === 'DE' ? '德国' : '其他国家'}经济数据
+            </h3>
+            <p className="text-[var(--text-secondary)] mb-6">
+              {getChartLabel(activeChart)}数据正在开发中
+            </p>
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-8 max-w-md mx-auto">
+              <div className="text-[var(--text-muted)] text-sm space-y-2">
+                <p>📊 数据源整合中</p>
+                <p>🔄 API 接口开发中</p>
+                <p>📈 图表组件适配中</p>
+              </div>
+              <div className="mt-4 text-xs text-[var(--text-muted)]">
+                预计完成时间：2025年Q2
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,27 +1,14 @@
-import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { getCryptoMarketData } from '../../utils/economicDataApi'
+import type { CryptoMarketData } from '../../store/economicStore'
 
-export function CryptoMarketChart() {
-  const [cryptoData, setCryptoData] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+interface CryptoMarketChartProps {
+  data: CryptoMarketData[]
+  loading?: boolean
+  error?: string | null
+}
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      try {
-        const data = await getCryptoMarketData()
-        setCryptoData(data)
-      } catch (error) {
-        console.error('Failed to load crypto data:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadData()
-  }, [])
-
-  if (isLoading || cryptoData.length === 0) {
+export function CryptoMarketChart({ data, loading = false, error = null }: CryptoMarketChartProps) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="h-96 flex items-center justify-center">
@@ -30,15 +17,38 @@ export function CryptoMarketChart() {
       </div>
     )
   }
+  
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="h-96 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-400 mb-2">加载失败</div>
+            <div className="text-sm text-[var(--text-muted)]">{error}</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-  const currentData = cryptoData[cryptoData.length - 1]
-  const peakData = cryptoData.reduce((max, d) => d.total > max.total ? d : max)
+  if (!data || data.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="h-96 flex items-center justify-center">
+          <div className="text-[var(--text-muted)]">暂无数据</div>
+        </div>
+      </div>
+    )
+  }
+
+  const currentData = data[data.length - 1]
+  const peakData = data.reduce((max, d) => d.total > max.total ? d : max)
   const btcDominance = ((currentData.btc / currentData.total) * 100).toFixed(1)
 
   // 计算年初至今涨幅
-  const yearStart = cryptoData.find(d => d.date.startsWith('2026-01')) ||
-    cryptoData.find(d => d.date.startsWith('2025-12')) ||
-    cryptoData[cryptoData.length - 2]
+  const yearStart = data.find(d => d.date.startsWith('2026-01')) ||
+    data.find(d => d.date.startsWith('2025-12')) ||
+    data[data.length - 2]
   const ytdChange = yearStart ? (((currentData.total - yearStart.total) / yearStart.total) * 100).toFixed(0) : '0'
 
   return (
@@ -55,22 +65,22 @@ export function CryptoMarketChart() {
       <div className="grid grid-cols-4 gap-3">
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
           <div className="text-xs text-[var(--text-muted)] mb-1">总市值</div>
-          <div className="text-2xl font-bold text-blue-400">${currentData.total}T</div>
+          <div className="text-2xl font-bold text-blue-400">${currentData.total.toFixed(2)}T</div>
           <div className="text-xs text-emerald-400 mt-1">+{ytdChange}% YTD</div>
         </div>
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
           <div className="text-xs text-[var(--text-muted)] mb-1">BTC市值</div>
-          <div className="text-2xl font-bold text-orange-400">${currentData.btc}T</div>
+          <div className="text-2xl font-bold text-orange-400">${currentData.btc.toFixed(2)}T</div>
           <div className="text-xs text-[var(--text-muted)] mt-1">占比 {btcDominance}%</div>
         </div>
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
           <div className="text-xs text-[var(--text-muted)] mb-1">ETH市值</div>
-          <div className="text-2xl font-bold text-violet-400">${currentData.eth}T</div>
+          <div className="text-2xl font-bold text-violet-400">${currentData.eth.toFixed(2)}T</div>
           <div className="text-xs text-[var(--text-muted)] mt-1">占比 {((currentData.eth / currentData.total) * 100).toFixed(1)}%</div>
         </div>
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
           <div className="text-xs text-[var(--text-muted)] mb-1">历史峰值</div>
-          <div className="text-2xl font-bold text-emerald-400">${peakData.total}T</div>
+          <div className="text-2xl font-bold text-emerald-400">${peakData.total.toFixed(2)}T</div>
           <div className="text-xs text-[var(--text-muted)] mt-1">{peakData.date}</div>
         </div>
       </div>
@@ -78,7 +88,7 @@ export function CryptoMarketChart() {
       {/* Chart */}
       <div className="h-96">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={cryptoData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <defs>
               <linearGradient id="colorBtc" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
@@ -224,7 +234,7 @@ export function CryptoMarketChart() {
             <div className="w-2 h-2 rounded-full bg-pink-400 mt-1.5" />
             <div>
               <div className="text-[var(--text-primary)] font-medium">当前</div>
-              <div className="text-[var(--text-secondary)]">总市值 ${currentData.total}T</div>
+              <div className="text-[var(--text-secondary)]">总市值 ${currentData.total.toFixed(2)}T</div>
             </div>
           </div>
         </div>

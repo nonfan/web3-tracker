@@ -11,7 +11,7 @@ import { Tooltip } from './components/Tooltip'
 import { LogoWithText } from './components/LogoWithText'
 import { requestNotificationPermission, sendNotification, checkDeadlines, shouldNotifyToday, markNotified } from './utils/notifications'
 import { cleanExpiredCache } from './utils/priceDataCache'
-import { Bell, BellOff, Coins, FolderKanban, TrendingUp } from 'lucide-react'
+import { Bell, BellOff, Coins, FolderKanban, TrendingUp, Bitcoin } from 'lucide-react'
 
 function App() {
   const { projects } = useStore()
@@ -68,61 +68,81 @@ function App() {
 
   return (
     <div className={`min-h-screen transition-colors ${theme === 'dark' ? 'bg-gradient-to-br from-[#0a0a0f] via-[#0f0f18] to-[#0a0a0f]' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'}`}>
-      <div className="p-4 md:p-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <header className="bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-4 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:relative">
-            {/* Logo */}
-            <div className="flex items-center">
+      {/* Full Width Header */}
+      <header className="bg-[var(--card-bg)] border-b border-[var(--border)] p-4 md:p-6">
+          <div className="flex items-center justify-between">
+            {/* Left Section - Logo */}
+            <div className="flex items-center gap-4 min-w-0">
               <LogoWithText />
             </div>
 
-            {/* Navigation Tabs - Centered */}
-            <nav className="flex gap-2 bg-[var(--bg-secondary)] p-1.5 rounded-2xl border border-[var(--border)] md:absolute md:left-1/2 md:-translate-x-1/2">
-              <Link
-                to="/"
-                className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${location.pathname === '/'
-                  ? 'bg-[var(--card-bg)] text-[var(--text-primary)] shadow-lg border border-[var(--border-hover)]'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+            {/* Center Section - Navigation */}
+            <nav className="flex items-center flex-shrink-0">
+              <div className="flex gap-1 bg-[var(--bg-secondary)] p-1 rounded-2xl border border-[var(--border)]">
+                <Link
+                  to="/"
+                  className={`px-4 lg:px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                    location.pathname === '/'
+                      ? 'bg-gradient-to-r from-blue-500 to-violet-500 text-white shadow-lg'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                   }`}
-              >
-                <FolderKanban className="w-4 h-4" />
-                <span>Projects</span>
-              </Link>
-              <Link
-                to="/tokens"
-                className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${location.pathname === '/tokens'
-                  ? 'bg-[var(--card-bg)] text-[var(--text-primary)] shadow-lg border border-[var(--border-hover)]'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                >
+                  <FolderKanban className="w-4 h-4" />
+                  <span className="hidden sm:inline">Projects</span>
+                </Link>
+                
+                <Link
+                  to="/tokens"
+                  className={`px-4 lg:px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                    location.pathname === '/tokens'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                   }`}
-              >
-                <Coins className="w-4 h-4" />
-                <span>Tokens</span>
-              </Link>
-              <Link
-                to="/economy"
-                className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${location.pathname === '/economy'
-                  ? 'bg-[var(--card-bg)] text-[var(--text-primary)] shadow-lg border border-[var(--border-hover)]'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                >
+                  <Coins className="w-4 h-4" />
+                  <span className="hidden sm:inline">Tokens</span>
+                </Link>
+                
+                <Link
+                  to="/economy"
+                  className={`px-4 lg:px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                    location.pathname === '/economy'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                   }`}
-              >
-                <TrendingUp className="w-4 h-4" />
-                <span>Economy</span>
-              </Link>
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="hidden sm:inline">Economy</span>
+                </Link>
+                
+                <Link
+                  to="/crypto"
+                  className={`px-4 lg:px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                    location.pathname === '/crypto'
+                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                  }`}
+                >
+                  <Bitcoin className="w-4 h-4" />
+                  <span className="hidden sm:inline">Crypto</span>
+                </Link>
+              </div>
             </nav>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* 主题 & 通知 */}
+            {/* Right Section - Actions */}
+            <div className="flex items-center gap-2 lg:gap-3">
+              {/* Theme & Notification Group */}
               <div className="flex items-center gap-1 bg-[var(--input-bg)] border border-[var(--border)] p-1 rounded-xl">
                 <ThemeToggle />
+                <div className="w-px h-6 bg-[var(--border)]" />
                 <Tooltip content={notificationEnabled ? '关闭通知' : '开启截止提醒'}>
                   <button
                     onClick={handleToggleNotification}
-                    className={`p-2 rounded-lg transition-all ${notificationEnabled
-                      ? 'text-emerald-400 hover:bg-emerald-500/10'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--input-bg)]'
-                      }`}
+                    className={`p-2.5 rounded-lg transition-all duration-300 ${
+                      notificationEnabled
+                        ? 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--input-bg)]'
+                    }`}
                   >
                     {notificationEnabled ? (
                       <Bell className="w-4 h-4" />
@@ -133,24 +153,27 @@ function App() {
                 </Tooltip>
               </div>
 
-              {/* 回收站 */}
-              <div className="flex items-center gap-1 bg-[var(--input-bg)] border border-[var(--border)] p-1 rounded-xl">
+              {/* Tools Group */}
+              <div className="hidden md:flex items-center gap-1 bg-[var(--input-bg)] border border-[var(--border)] p-1 rounded-xl">
                 <TrashBin />
               </div>
 
-              {/* 云同步 & 数据导入导出 */}
+              {/* Sync & Data Group */}
               <div className="flex items-center gap-1 bg-[var(--input-bg)] border border-[var(--border)] p-1 rounded-xl">
                 <GistSync />
-                <div className="w-px h-5 bg-[var(--border)]" />
+                <div className="w-px h-6 bg-[var(--border)]" />
                 <DataSync />
-                <div className="w-px h-5 bg-[var(--border)]" />
-                <CacheManager />
+                <div className="hidden lg:block w-px h-6 bg-[var(--border)]" />
+                <div className="hidden lg:block">
+                  <CacheManager />
+                </div>
               </div>
             </div>
           </div>
-        </header>
+      </header>
 
-        {/* Page Content */}
+      {/* Page Content with Container */}
+      <div className="p-4 md:p-6 max-w-7xl mx-auto">
         <Outlet />
       </div>
     </div>

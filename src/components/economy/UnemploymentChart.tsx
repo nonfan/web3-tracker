@@ -1,33 +1,14 @@
-import { useEffect, useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { Settings, AlertCircle } from 'lucide-react'
-import { getUnemploymentData, type EconomicDataPoint } from '../../utils/economicDataApi'
+import { type EconomicDataPoint } from '../../utils/economicDataApi'
 
-export function UnemploymentChart() {
-  const [unemploymentData, setUnemploymentData] = useState<EconomicDataPoint[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+interface UnemploymentChartProps {
+  data: EconomicDataPoint[]
+  loading?: boolean
+  error?: string | null
+}
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const data = await getUnemploymentData()
-        if (data.length === 0) {
-          setError('no-data')
-        } else {
-          setUnemploymentData(data)
-        }
-      } catch (err) {
-        console.error('Failed to load unemployment data:', err)
-        setError('load-error')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadData()
-  }, [])
+export function UnemploymentChart({ data: unemploymentData, loading: isLoading = false, error = null }: UnemploymentChartProps) {
 
   // 加载状态
   if (isLoading) {
@@ -41,8 +22,31 @@ export function UnemploymentChart() {
     )
   }
 
+  // 错误状态
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">加载失败</h3>
+          <p className="text-sm text-[var(--text-secondary)] mb-4">
+            {error}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg transition-colors border border-[var(--border)]"
+          >
+            重新加载
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   // 无数据状态
-  if (error === 'no-data' || unemploymentData.length === 0) {
+  if (!unemploymentData || unemploymentData.length === 0) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center max-w-md">
@@ -54,34 +58,17 @@ export function UnemploymentChart() {
             请配置经济数据源以查看失业率走势
           </p>
           <button
-            onClick={() => window.location.hash = '#/economy?tab=settings'}
+            onClick={() => {
+              // 触发 Gist 设置面板打开
+              const gistButton = document.querySelector('[data-gist-settings]') as HTMLButtonElement
+              if (gistButton) {
+                gistButton.click()
+              }
+            }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
           >
             <Settings className="w-4 h-4" />
             前往配置
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // 错误状态
-  if (error === 'load-error') {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">加载失败</h3>
-          <p className="text-sm text-[var(--text-secondary)] mb-4">
-            无法加载经济数据，请检查网络连接或数据源配置
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg transition-colors border border-[var(--border)]"
-          >
-            重新加载
           </button>
         </div>
       </div>

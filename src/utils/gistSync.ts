@@ -6,7 +6,8 @@ const SYNC_STATE_KEY = 'web3tracker-sync-state'
 
 interface GistConfig {
   token: string
-  gistId: string | null
+  projectGistId: string | null    // 项目数据 Gist ID
+  economicGistId: string | null   // 经济数据 Gist ID
 }
 
 // 同步状态：记录上次同步的版本号
@@ -19,6 +20,10 @@ interface SyncState {
 export interface GistInfo {
   id: string
   updatedAt: string
+  type: 'project' | 'economic'
+  description?: string
+  fileName?: string  // 添加文件名字段
+  owner?: string     // 添加所有者字段
 }
 
 export interface DiffResult {
@@ -190,7 +195,7 @@ export function clearGistConfig() {
   clearSyncState()
 }
 
-// 查找所有 Web3Tracker Gist
+// 查找所有 Web3Tracker 相关的 Gist（项目数据和经济数据）
 export async function findAllGists(token: string): Promise<GistInfo[]> {
   try {
     const response = await fetch('https://api.github.com/gists?per_page=100', {
@@ -203,11 +208,33 @@ export async function findAllGists(token: string): Promise<GistInfo[]> {
     const gists = await response.json()
     const results: GistInfo[] = []
     for (const gist of gists) {
-      if (gist.files && gist.files[GIST_FILENAME]) {
-        results.push({
-          id: gist.id,
-          updatedAt: gist.updated_at,
-        })
+      if (gist.files) {
+        // 检查是否是项目数据 Gist
+        if (gist.files[GIST_FILENAME]) {
+          const fileName = Object.keys(gist.files)[0] // 获取第一个文件名
+          const owner = gist.owner?.login || 'unknown'
+          results.push({
+            id: gist.id,
+            updatedAt: gist.updated_at,
+            type: 'project',
+            description: gist.description || 'Web3 Tracker Data Backup',
+            fileName: `${owner} / ${fileName}`,
+            owner
+          })
+        }
+        // 检查是否是经济数据 Gist
+        else if (gist.files['economic-data.json']) {
+          const fileName = 'economic-data.json'
+          const owner = gist.owner?.login || 'unknown'
+          results.push({
+            id: gist.id,
+            updatedAt: gist.updated_at,
+            type: 'economic',
+            description: gist.description || 'Web3 Tracker Economic Data',
+            fileName: `${owner} / ${fileName}`,
+            owner
+          })
+        }
       }
     }
     return results
@@ -339,13 +366,15 @@ export async function syncToGist(data: string): Promise<{
     return { success: false, error: '未配置 GitHub Token' }
   }
 
+  // 使用项目数据 Gist ID
+  const gistId = config.projectGistId
   const syncState = getSyncState()
   const currentVersion = (syncState?.version || 0) + 1
 
   try {
-    if (config.gistId) {
+    if (gistId) {
       // 先拉取云端数据检查冲突
-      const remoteData = await readGist(config.token, config.gistId)
+      const remoteData = await readGist(config.token, gistId)
       
       if (remoteData) {
         const diff = compareDataWithSync(data, remoteData, syncState)
@@ -364,7 +393,7 @@ export async function syncToGist(data: string): Promise<{
       
       // 无冲突，直接更新
       try {
-        await updateGist(config.token, config.gistId, data, currentVersion)
+        await updateGist(config.token, gistId, data, currentVersion)
         // 更新同步状态
         saveSyncState({
           version: currentVersion,
@@ -374,7 +403,7 @@ export async function syncToGist(data: string): Promise<{
       } catch (e) {
         if (e instanceof Error && e.message === 'GIST_NOT_FOUND') {
           const newGistId = await createGist(config.token, data, currentVersion)
-          saveGistConfig({ ...config, gistId: newGistId })
+          saveGistConfig({ ...config, projectGistId: newGistId })
           saveSyncState({
             version: currentVersion,
             lastSyncAt: Date.now(),
@@ -387,12 +416,13 @@ export async function syncToGist(data: string): Promise<{
     } else {
       // 没有选择 Gist，检查是否已有
       const existingGists = await findAllGists(config.token)
-      if (existingGists.length > 0) {
-        return { success: false, needSelect: true, error: `已有 ${existingGists.length} 个云端存储，请先在设置中选择要使用的存储` }
+      const projectGists = existingGists.filter(g => g.type === 'project')
+      if (projectGists.length > 0) {
+        return { success: false, needSelect: true, error: `已有 ${projectGists.length} 个项目数据存储，请先在设置中选择要使用的存储` }
       }
       // 没有已有的，创建新的
       const gistId = await createGist(config.token, data, currentVersion)
-      saveGistConfig({ ...config, gistId })
+      saveGistConfig({ ...config, projectGistId: gistId })
       saveSyncState({
         version: currentVersion,
         lastSyncAt: Date.now(),
@@ -408,7 +438,7 @@ export async function syncToGist(data: string): Promise<{
 // 强制推送（忽略冲突）
 export async function forcePushToGist(data: string): Promise<{ success: boolean; error?: string }> {
   const config = getGistConfig()
-  if (!config?.token || !config.gistId) {
+  if (!config?.token || !config.projectGistId) {
     return { success: false, error: '未配置' }
   }
 
@@ -416,7 +446,7 @@ export async function forcePushToGist(data: string): Promise<{ success: boolean;
   const currentVersion = (syncState?.version || 0) + 1
 
   try {
-    await updateGist(config.token, config.gistId, data, currentVersion)
+    await updateGist(config.token, config.projectGistId, data, currentVersion)
     saveSyncState({
       version: currentVersion,
       lastSyncAt: Date.now(),
@@ -435,12 +465,12 @@ export async function pullFromGist(): Promise<{ success: boolean; data?: string;
     return { success: false, error: '未配置 GitHub Token' }
   }
 
-  if (!config.gistId) {
-    return { success: false, error: '未选择云端数据，请先选择或推送' }
+  if (!config.projectGistId) {
+    return { success: false, error: '未选择项目数据存储，请先选择或推送' }
   }
 
   try {
-    const data = await readGist(config.token, config.gistId)
+    const data = await readGist(config.token, config.projectGistId)
     if (!data) {
       return { success: false, error: '云端数据为空' }
     }
