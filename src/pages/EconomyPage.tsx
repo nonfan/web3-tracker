@@ -8,17 +8,15 @@ import { useEconomicStore } from '../store/economicStore'
 import { useAutoRefresh, useVisibilityRefresh } from '../hooks/useAutoRefresh'
 import { TrendingUp, Activity, Briefcase } from 'lucide-react'
 
-type ChartType = 'fed-rate' | 'inflation' | 'unemployment'
+type ChartType = 'interest-rate' | 'inflation' | 'unemployment'
 
 export function EconomyPage() {
-  const [activeChart, setActiveChart] = useState<ChartType>('fed-rate')
+  const [activeChart, setActiveChart] = useState<ChartType>('interest-rate')
   
   // 使用全局状态管理
   const {
     // 数据状态
-    fedRateData,
-    inflationData,
-    unemploymentData,
+    currentCountryData,
     
     // 元数据
     isLoading,
@@ -30,9 +28,10 @@ export function EconomyPage() {
     refreshAllData,
     
     // 便捷方法
-    getLatestFedRate,
+    getLatestInterestRate,
     getLatestInflation,
-    getLatestUnemployment
+    getLatestUnemployment,
+    getCurrentCountryLabels
   } = useEconomicStore()
   
   // 自动刷新数据
@@ -41,40 +40,22 @@ export function EconomyPage() {
   
   // 页面加载时确保数据已加载
   useEffect(() => {
-    // 如果没有任何数据，立即刷新
-    if (fedRateData.length === 0 && inflationData.length === 0 && 
-        unemploymentData.length === 0) {
-      console.log('📊 Initial data load for EconomyPage')
-      refreshAllData()
-    }
-  }, [refreshAllData, fedRateData.length, inflationData.length, unemploymentData.length])
+    console.log('📊 Initial data load for EconomyPage')
+    refreshAllData()
+  }, [refreshAllData])
   
   // 获取最新数据
-  const latestFedRate = getLatestFedRate()
+  const latestInterestRate = getLatestInterestRate()
   const latestInflation = getLatestInflation()
   const latestUnemployment = getLatestUnemployment()
   
-  // 根据选中的国家调整图表标签
-  const getChartLabel = (chartId: ChartType) => {
-    const baseLabels = {
-      'fed-rate': selectedCountry === 'US' ? '美联储利率' : 
-                  selectedCountry === 'CN' ? '央行利率' :
-                  selectedCountry === 'EU' ? '欧央行利率' :
-                  selectedCountry === 'JP' ? '日银利率' :
-                  selectedCountry === 'UK' ? '英银利率' :
-                  selectedCountry === 'CA' ? '加银利率' :
-                  selectedCountry === 'AU' ? '澳储行利率' :
-                  selectedCountry === 'DE' ? '德银利率' : '基准利率',
-      'inflation': '通胀率',
-      'unemployment': '失业率'
-    }
-    return baseLabels[chartId]
-  }
-
+  // 获取当前国家的标签
+  const labels = getCurrentCountryLabels()
+  
   const charts = [
-    { id: 'fed-rate' as ChartType, label: getChartLabel('fed-rate'), icon: TrendingUp, color: 'violet' },
-    { id: 'inflation' as ChartType, label: getChartLabel('inflation'), icon: Activity, color: 'amber' },
-    { id: 'unemployment' as ChartType, label: getChartLabel('unemployment'), icon: Briefcase, color: 'emerald' },
+    { id: 'interest-rate' as ChartType, label: labels.interestRate, icon: TrendingUp, color: 'violet' },
+    { id: 'inflation' as ChartType, label: labels.inflation, icon: Activity, color: 'amber' },
+    { id: 'unemployment' as ChartType, label: labels.unemployment, icon: Briefcase, color: 'emerald' },
   ]
 
   return (
@@ -88,41 +69,34 @@ export function EconomyPage() {
       {/* Stats Overview - 使用统一数据源 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <DataCard
-          title={selectedCountry === 'US' ? '当前利率' : 
-                 selectedCountry === 'CN' ? '基准利率' :
-                 selectedCountry === 'EU' ? '主要再融资利率' :
-                 selectedCountry === 'JP' ? '政策利率' :
-                 selectedCountry === 'UK' ? '银行利率' :
-                 selectedCountry === 'CA' ? '隔夜利率' :
-                 selectedCountry === 'AU' ? '现金利率' :
-                 selectedCountry === 'DE' ? '基准利率' : '基准利率'}
-          value={selectedCountry === 'US' ? latestFedRate?.rate : null}
-          date={selectedCountry === 'US' ? latestFedRate?.date : null}
+          title={labels.interestRate}
+          value={latestInterestRate?.value}
+          date={latestInterestRate?.date}
           unit="%"
-          loading={isLoading.fedRate}
-          error={errors.fedRate}
+          loading={isLoading.country}
+          error={errors.country}
           color="violet"
           icon="fed-rate"
         />
         
         <DataCard
-          title="通胀率"
-          value={selectedCountry === 'US' ? latestInflation?.value : null}
-          date={selectedCountry === 'US' ? latestInflation?.date : null}
+          title={labels.inflation}
+          value={latestInflation?.value}
+          date={latestInflation?.date}
           unit="%"
-          loading={isLoading.inflation}
-          error={errors.inflation}
+          loading={isLoading.country}
+          error={errors.country}
           color="amber"
           icon="inflation"
         />
         
         <DataCard
-          title="失业率"
-          value={selectedCountry === 'US' ? latestUnemployment?.value : null}
-          date={selectedCountry === 'US' ? latestUnemployment?.date : null}
+          title={labels.unemployment}
+          value={latestUnemployment?.value}
+          date={latestUnemployment?.date}
           unit="%"
-          loading={isLoading.unemployment}
-          error={errors.unemployment}
+          loading={isLoading.country}
+          error={errors.country}
           color="emerald"
           icon="unemployment"
         />
@@ -162,27 +136,32 @@ export function EconomyPage() {
 
       {/* Chart Display */}
       <div className="bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-6">
-        {selectedCountry === 'US' ? (
+        {currentCountryData ? (
           <>
-            {activeChart === 'fed-rate' && (
+            {activeChart === 'interest-rate' && (
               <FedRateChart 
-                data={fedRateData}
-                loading={isLoading.fedRate}
-                error={errors.fedRate}
+                data={currentCountryData.interestRate.map(item => ({
+                  date: item.date,
+                  rate: item.value,
+                  change: 0, // TODO: 计算变化
+                  type: 'actual' as const
+                }))}
+                loading={isLoading.country}
+                error={errors.country}
               />
             )}
             {activeChart === 'inflation' && (
               <InflationChart 
-                data={inflationData}
-                loading={isLoading.inflation}
-                error={errors.inflation}
+                data={currentCountryData.inflation}
+                loading={isLoading.country}
+                error={errors.country}
               />
             )}
             {activeChart === 'unemployment' && (
               <UnemploymentChart 
-                data={unemploymentData}
-                loading={isLoading.unemployment}
-                error={errors.unemployment}
+                data={currentCountryData.unemployment}
+                loading={isLoading.country}
+                error={errors.country}
               />
             )}
           </>
@@ -195,7 +174,8 @@ export function EconomyPage() {
                selectedCountry === 'UK' ? '🇬🇧' :
                selectedCountry === 'CA' ? '🇨🇦' :
                selectedCountry === 'AU' ? '🇦🇺' :
-               selectedCountry === 'DE' ? '🇩🇪' : '🏳️'}
+               selectedCountry === 'DE' ? '🇩🇪' : 
+               selectedCountry === 'US' ? '🇺🇸' : '🏳️'}
             </div>
             <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
               {selectedCountry === 'CN' ? '中国' :
@@ -204,21 +184,43 @@ export function EconomyPage() {
                selectedCountry === 'UK' ? '英国' :
                selectedCountry === 'CA' ? '加拿大' :
                selectedCountry === 'AU' ? '澳大利亚' :
-               selectedCountry === 'DE' ? '德国' : '其他国家'}经济数据
+               selectedCountry === 'DE' ? '德国' :
+               selectedCountry === 'US' ? '美国' : '其他国家'}经济数据
             </h3>
             <p className="text-[var(--text-secondary)] mb-6">
-              {getChartLabel(activeChart)}数据正在开发中
+              {isLoading.country ? '正在加载数据...' : 
+               selectedCountry === 'US' ? '请配置 GitHub Gist 来获取经济数据' :
+               `${labels.interestRate}数据正在开发中`}
             </p>
-            <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-8 max-w-md mx-auto">
-              <div className="text-[var(--text-muted)] text-sm space-y-2">
-                <p>📊 数据源整合中</p>
-                <p>🔄 API 接口开发中</p>
-                <p>📈 图表组件适配中</p>
+            
+            {!isLoading.country && (
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-8 max-w-md mx-auto">
+                {selectedCountry === 'US' ? (
+                  <div className="text-[var(--text-muted)] text-sm space-y-2">
+                    <p>📊 请配置 GitHub Gist</p>
+                    <p>🔑 设置 API Token</p>
+                    <p>📈 启用数据同步</p>
+                    <div className="mt-4">
+                      <button
+                        onClick={refreshAllData}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                      >
+                        重新加载
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-[var(--text-muted)] text-sm space-y-2">
+                    <p>📊 数据源整合中</p>
+                    <p>🔄 API 接口开发中</p>
+                    <p>📈 图表组件适配中</p>
+                    <div className="mt-4 text-xs text-[var(--text-muted)]">
+                      预计完成时间：2025年Q2
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="mt-4 text-xs text-[var(--text-muted)]">
-                预计完成时间：2025年Q2
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>

@@ -1,18 +1,20 @@
 /**
  * 经济数据全局状态管理
- * 解决数据不一致问题的核心方案
+ * 支持多国经济数据
  */
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { 
-  getFedRateData, 
-  getInflationData, 
-  getUnemploymentData, 
   getCryptoMarketData,
-  type FedRateData,
   type EconomicDataPoint
 } from '../utils/economicDataApi'
+import {
+  fetchMultiCountryEconomicData,
+  getCountryEconomicData,
+  type CountryEconomicData,
+  type MultiCountryData
+} from '../utils/multiCountryEconomicDataApi'
 
 export interface CryptoMarketData {
   date: string
@@ -22,10 +24,9 @@ export interface CryptoMarketData {
 }
 
 interface EconomicState {
-  // 数据状态
-  fedRateData: FedRateData[]
-  inflationData: EconomicDataPoint[]
-  unemploymentData: EconomicDataPoint[]
+  // 多国数据状态
+  multiCountryData: MultiCountryData | null
+  currentCountryData: CountryEconomicData | null
   cryptoData: CryptoMarketData[]
   
   // 元数据
@@ -38,27 +39,32 @@ interface EconomicState {
   
   // 操作方法
   setSelectedCountry: (country: string) => void
-  fetchFedRateData: () => Promise<void>
-  fetchInflationData: () => Promise<void>
-  fetchUnemploymentData: () => Promise<void>
+  fetchMultiCountryData: () => Promise<void>
+  fetchCountryData: (countryCode: string) => Promise<void>
   fetchCryptoData: () => Promise<void>
   refreshAllData: () => Promise<void>
   clearErrors: () => void
   
   // 获取最新数据的便捷方法
-  getLatestFedRate: () => FedRateData | null
+  getLatestInterestRate: () => EconomicDataPoint | null
   getLatestInflation: () => EconomicDataPoint | null
   getLatestUnemployment: () => EconomicDataPoint | null
   getLatestCrypto: () => CryptoMarketData | null
+  
+  // 获取当前国家的数据标签
+  getCurrentCountryLabels: () => {
+    interestRate: string
+    inflation: string
+    unemployment: string
+  }
 }
 
 export const useEconomicStore = create<EconomicState>()(
   persist(
     (set, get) => ({
       // 初始状态
-      fedRateData: [],
-      inflationData: [],
-      unemploymentData: [],
+      multiCountryData: null,
+      currentCountryData: null,
       cryptoData: [],
       
       lastUpdate: {},
@@ -70,110 +76,72 @@ export const useEconomicStore = create<EconomicState>()(
       // 设置选中的国家
       setSelectedCountry: (country: string) => {
         set({ selectedCountry: country })
-        // 切换国家时重新获取数据
-        get().refreshAllData()
+        // 切换国家时获取该国家的数据
+        get().fetchCountryData(country)
       },
       
-      // 获取联邦利率数据
-      fetchFedRateData: async () => {
-        const { selectedCountry } = get()
-        
+      // 获取多国经济数据
+      fetchMultiCountryData: async () => {
         set(state => ({ 
-          isLoading: { ...state.isLoading, fedRate: true },
-          errors: { ...state.errors, fedRate: null }
+          isLoading: { ...state.isLoading, multiCountry: true },
+          errors: { ...state.errors, multiCountry: null }
         }))
         
         try {
-          // 目前只支持美国数据
-          if (selectedCountry === 'US') {
-            const data = await getFedRateData()
-            set(state => ({
-              fedRateData: data,
-              lastUpdate: { ...state.lastUpdate, fedRate: Date.now() },
-              isLoading: { ...state.isLoading, fedRate: false }
-            }))
-            console.log('📈 Fed rate data updated:', data.length, 'points')
-          } else {
-            // 其他国家暂时清空数据
-            set(state => ({
-              fedRateData: [],
-              lastUpdate: { ...state.lastUpdate, fedRate: Date.now() },
-              isLoading: { ...state.isLoading, fedRate: false }
-            }))
+          const data = await fetchMultiCountryEconomicData()
+          set(state => ({
+            multiCountryData: data,
+            lastUpdate: { ...state.lastUpdate, multiCountry: Date.now() },
+            isLoading: { ...state.isLoading, multiCountry: false }
+          }))
+          
+          if (data) {
+            console.log('📈 Multi-country economic data updated:', Object.keys(data.data).length, 'countries')
+            
+            // 如果当前选中的国家有数据，更新当前国家数据
+            const { selectedCountry } = get()
+            if (data.data[selectedCountry]) {
+              set({ currentCountryData: data.data[selectedCountry] })
+            }
           }
         } catch (error) {
-          console.error('❌ Failed to fetch fed rate data:', error)
+          console.error('❌ Failed to fetch multi-country economic data:', error)
           set(state => ({
-            isLoading: { ...state.isLoading, fedRate: false },
-            errors: { ...state.errors, fedRate: error instanceof Error ? error.message : 'Unknown error' }
+            isLoading: { ...state.isLoading, multiCountry: false },
+            errors: { ...state.errors, multiCountry: error instanceof Error ? error.message : 'Unknown error' }
           }))
         }
       },
       
-      // 获取通胀率数据
-      fetchInflationData: async () => {
-        const { selectedCountry } = get()
-        
+      // 获取指定国家的经济数据
+      fetchCountryData: async (countryCode: string) => {
         set(state => ({ 
-          isLoading: { ...state.isLoading, inflation: true },
-          errors: { ...state.errors, inflation: null }
+          isLoading: { ...state.isLoading, country: true },
+          errors: { ...state.errors, country: null }
         }))
         
         try {
-          if (selectedCountry === 'US') {
-            const data = await getInflationData()
-            set(state => ({
-              inflationData: data,
-              lastUpdate: { ...state.lastUpdate, inflation: Date.now() },
-              isLoading: { ...state.isLoading, inflation: false }
-            }))
-            console.log('📊 Inflation data updated:', data.length, 'points')
-          } else {
-            set(state => ({
-              inflationData: [],
-              lastUpdate: { ...state.lastUpdate, inflation: Date.now() },
-              isLoading: { ...state.isLoading, inflation: false }
-            }))
-          }
-        } catch (error) {
-          console.error('❌ Failed to fetch inflation data:', error)
+          const data = await getCountryEconomicData(countryCode)
           set(state => ({
-            isLoading: { ...state.isLoading, inflation: false },
-            errors: { ...state.errors, inflation: error instanceof Error ? error.message : 'Unknown error' }
+            currentCountryData: data,
+            lastUpdate: { ...state.lastUpdate, country: Date.now() },
+            isLoading: { ...state.isLoading, country: false }
           }))
-        }
-      },
-      
-      // 获取失业率数据
-      fetchUnemploymentData: async () => {
-        const { selectedCountry } = get()
-        
-        set(state => ({ 
-          isLoading: { ...state.isLoading, unemployment: true },
-          errors: { ...state.errors, unemployment: null }
-        }))
-        
-        try {
-          if (selectedCountry === 'US') {
-            const data = await getUnemploymentData()
-            set(state => ({
-              unemploymentData: data,
-              lastUpdate: { ...state.lastUpdate, unemployment: Date.now() },
-              isLoading: { ...state.isLoading, unemployment: false }
-            }))
-            console.log('💼 Unemployment data updated:', data.length, 'points')
+          
+          if (data) {
+            console.log(`📊 ${data.name} economic data updated:`, {
+              interestRate: data.interestRate.length,
+              inflation: data.inflation.length,
+              unemployment: data.unemployment.length
+            })
           } else {
-            set(state => ({
-              unemploymentData: [],
-              lastUpdate: { ...state.lastUpdate, unemployment: Date.now() },
-              isLoading: { ...state.isLoading, unemployment: false }
-            }))
+            console.log(`⚠️ No economic data available for ${countryCode}`)
           }
         } catch (error) {
-          console.error('❌ Failed to fetch unemployment data:', error)
+          console.error(`❌ Failed to fetch economic data for ${countryCode}:`, error)
           set(state => ({
-            isLoading: { ...state.isLoading, unemployment: false },
-            errors: { ...state.errors, unemployment: error instanceof Error ? error.message : 'Unknown error' }
+            isLoading: { ...state.isLoading, country: false },
+            errors: { ...state.errors, country: error instanceof Error ? error.message : 'Unknown error' }
           }))
         }
       },
@@ -205,13 +173,11 @@ export const useEconomicStore = create<EconomicState>()(
       // 刷新所有数据
       refreshAllData: async () => {
         console.log('🔄 Refreshing all economic data...')
-        const { fetchFedRateData, fetchInflationData, fetchUnemploymentData, fetchCryptoData } = get()
+        const { fetchMultiCountryData, fetchCryptoData, selectedCountry } = get()
         
         // 并行获取所有数据
         await Promise.allSettled([
-          fetchFedRateData(),
-          fetchInflationData(),
-          fetchUnemploymentData(),
+          fetchMultiCountryData(),
           fetchCryptoData()
         ])
         
@@ -223,43 +189,95 @@ export const useEconomicStore = create<EconomicState>()(
         set({ errors: {} })
       },
       
-      // 便捷方法：获取最新的联邦利率
-      getLatestFedRate: () => {
-        const { fedRateData } = get()
-        return fedRateData.length > 0 ? fedRateData[fedRateData.length - 1] : null
+      // 便捷方法：获取最新的利率
+      getLatestInterestRate: () => {
+        const { currentCountryData } = get()
+        if (!currentCountryData || !currentCountryData.interestRate.length) return null
+        return currentCountryData.interestRate[currentCountryData.interestRate.length - 1]
       },
       
       // 便捷方法：获取最新的通胀率
       getLatestInflation: () => {
-        const { inflationData } = get()
-        return inflationData.length > 0 ? inflationData[inflationData.length - 1] : null
+        const { currentCountryData } = get()
+        if (!currentCountryData || !currentCountryData.inflation.length) return null
+        return currentCountryData.inflation[currentCountryData.inflation.length - 1]
       },
       
       // 便捷方法：获取最新的失业率
       getLatestUnemployment: () => {
-        const { unemploymentData } = get()
-        return unemploymentData.length > 0 ? unemploymentData[unemploymentData.length - 1] : null
+        const { currentCountryData } = get()
+        if (!currentCountryData || !currentCountryData.unemployment.length) return null
+        return currentCountryData.unemployment[currentCountryData.unemployment.length - 1]
       },
       
       // 便捷方法：获取最新的加密货币数据
       getLatestCrypto: () => {
         const { cryptoData } = get()
         return cryptoData.length > 0 ? cryptoData[cryptoData.length - 1] : null
+      },
+      
+      // 获取当前国家的数据标签
+      getCurrentCountryLabels: () => {
+        const { selectedCountry } = get()
+        
+        const labels = {
+          US: {
+            interestRate: '美联储利率',
+            inflation: '通胀率',
+            unemployment: '失业率'
+          },
+          CN: {
+            interestRate: '央行利率',
+            inflation: '通胀率',
+            unemployment: '失业率'
+          },
+          EU: {
+            interestRate: '欧央行利率',
+            inflation: '通胀率',
+            unemployment: '失业率'
+          },
+          JP: {
+            interestRate: '日银利率',
+            inflation: '通胀率',
+            unemployment: '失业率'
+          },
+          UK: {
+            interestRate: '英银利率',
+            inflation: '通胀率',
+            unemployment: '失业率'
+          },
+          CA: {
+            interestRate: '加银利率',
+            inflation: '通胀率',
+            unemployment: '失业率'
+          },
+          AU: {
+            interestRate: '澳储行利率',
+            inflation: '通胀率',
+            unemployment: '失业率'
+          },
+          DE: {
+            interestRate: '德银利率',
+            inflation: '通胀率',
+            unemployment: '失业率'
+          }
+        }
+        
+        return labels[selectedCountry as keyof typeof labels] || labels.US
       }
     }),
     {
       name: 'economic-data-store',
       // 只持久化数据，不持久化加载状态和错误
       partialize: (state) => ({
-        fedRateData: state.fedRateData,
-        inflationData: state.inflationData,
-        unemploymentData: state.unemploymentData,
+        multiCountryData: state.multiCountryData,
+        currentCountryData: state.currentCountryData,
         cryptoData: state.cryptoData,
         lastUpdate: state.lastUpdate,
         selectedCountry: state.selectedCountry
       }),
       // 数据过期时间：1小时
-      version: 1
+      version: 2
     }
   )
 )

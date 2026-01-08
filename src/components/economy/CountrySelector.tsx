@@ -1,30 +1,13 @@
 import { Globe } from 'lucide-react'
-
-interface Country {
-  code: string
-  name: string
-  flag: string
-  currency: string
-}
+import { getSupportedCountries } from '../../utils/multiCountryEconomicDataApi'
 
 interface CountrySelectorProps {
   selectedCountry: string
   onCountryChange: (country: string) => void
 }
 
-// 支持的国家列表
-const supportedCountries: Country[] = [
-  { code: 'US', name: '美国', flag: '🇺🇸', currency: 'USD' },
-  { code: 'CN', name: '中国', flag: '🇨🇳', currency: 'CNY' },
-  { code: 'JP', name: '日本', flag: '🇯🇵', currency: 'JPY' },
-  { code: 'EU', name: '欧盟', flag: '🇪🇺', currency: 'EUR' },
-  { code: 'UK', name: '英国', flag: '🇬🇧', currency: 'GBP' },
-  { code: 'CA', name: '加拿大', flag: '🇨🇦', currency: 'CAD' },
-  { code: 'AU', name: '澳大利亚', flag: '🇦🇺', currency: 'AUD' },
-  { code: 'DE', name: '德国', flag: '🇩🇪', currency: 'EUR' },
-]
-
 export function CountrySelector({ selectedCountry, onCountryChange }: CountrySelectorProps) {
+  const supportedCountries = getSupportedCountries()
   const currentCountry = supportedCountries.find(c => c.code === selectedCountry) || supportedCountries[0]
   
   return (
