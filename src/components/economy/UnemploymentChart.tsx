@@ -6,9 +6,17 @@ interface UnemploymentChartProps {
   data: EconomicDataPoint[]
   loading?: boolean
   error?: string | null
+  countryName?: string
+  countryCode?: string
 }
 
-export function UnemploymentChart({ data: unemploymentData, loading: isLoading = false, error = null }: UnemploymentChartProps) {
+export function UnemploymentChart({ 
+  data: unemploymentData, 
+  loading: isLoading = false, 
+  error = null,
+  countryName = '美国',
+  countryCode = 'US'
+}: UnemploymentChartProps) {
 
   // 加载状态
   if (isLoading) {
@@ -91,7 +99,7 @@ export function UnemploymentChart({ data: unemploymentData, loading: isLoading =
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">美国失业率走势</h2>
+        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">{countryName}失业率走势</h2>
         <p className="text-sm text-[var(--text-secondary)]">
           失业率反映劳动力市场健康状况，影响消费能力和经济增长
         </p>

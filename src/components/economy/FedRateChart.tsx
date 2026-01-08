@@ -6,9 +6,17 @@ interface FedRateChartProps {
   data: FedRateData[]
   loading?: boolean
   error?: string | null
+  countryName?: string
+  countryCode?: string
 }
 
-export function FedRateChart({ data: fedRateData, loading: isLoading = false, error = null }: FedRateChartProps) {
+export function FedRateChart({ 
+  data: fedRateData, 
+  loading: isLoading = false, 
+  error = null,
+  countryName = '美国',
+  countryCode = 'US'
+}: FedRateChartProps) {
 
   // 加载状态
   if (isLoading) {
@@ -55,7 +63,7 @@ export function FedRateChart({ data: fedRateData, loading: isLoading = false, er
           </div>
           <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">暂无数据</h3>
           <p className="text-sm text-[var(--text-secondary)] mb-4">
-            请配置经济数据源以查看美联储利率走势
+            请配置经济数据源以查看利率走势
           </p>
           <button
             onClick={() => {
@@ -94,9 +102,13 @@ export function FedRateChart({ data: fedRateData, loading: isLoading = false, er
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">美联储基准利率走势</h2>
+        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">{countryName}基准利率走势</h2>
         <p className="text-sm text-[var(--text-secondary)]">
-          联邦基金利率是美国货币政策的核心工具，直接影响全球资本市场和流动性
+          {countryCode === 'US' ? '联邦基金利率是美国货币政策的核心工具，直接影响全球资本市场和流动性' :
+           countryCode === 'CN' ? '央行基准利率是中国货币政策的重要工具，影响市场流动性和经济增长' :
+           countryCode === 'EU' ? '欧央行主要再融资利率是欧元区货币政策的核心工具' :
+           countryCode === 'JP' ? '日银政策利率是日本货币政策的主要工具' :
+           '基准利率是该国货币政策的重要工具'}
         </p>
       </div>
 

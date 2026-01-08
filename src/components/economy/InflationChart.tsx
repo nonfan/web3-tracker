@@ -6,9 +6,17 @@ interface InflationChartProps {
   data: EconomicDataPoint[]
   loading?: boolean
   error?: string | null
+  countryName?: string
+  countryCode?: string
 }
 
-export function InflationChart({ data: inflationData, loading: isLoading = false, error = null }: InflationChartProps) {
+export function InflationChart({ 
+  data: inflationData, 
+  loading: isLoading = false, 
+  error = null,
+  countryName = '美国',
+  countryCode = 'US'
+}: InflationChartProps) {
 
   // 加载状态
   if (isLoading) {
@@ -77,7 +85,7 @@ export function InflationChart({ data: inflationData, loading: isLoading = false
 
   const currentRate = inflationData[inflationData.length - 1].value
   const currentDate = inflationData[inflationData.length - 1].date
-  const targetRate = 2.0
+  const targetRate = countryCode === 'US' ? 2.0 : countryCode === 'EU' ? 2.0 : countryCode === 'JP' ? 2.0 : 2.0 // 大多数央行目标都是2%
   const peakRate = Math.max(...inflationData.map(d => d.value))
 
   // 找到峰值日期
@@ -89,6 +97,23 @@ export function InflationChart({ data: inflationData, loading: isLoading = false
   const hasCPIIndex = inflationData[0]?.value > 100
   const currentCPI = hasCPIIndex ? inflationData[inflationData.length - 1].value : null
 
+  // 根据国家获取央行名称
+  const getCentralBankName = () => {
+    switch (countryCode) {
+      case 'US': return '美联储'
+      case 'CN': return '央行'
+      case 'EU': return '欧央行'
+      case 'JP': return '日银'
+      case 'UK': return '英银'
+      case 'CA': return '加银'
+      case 'AU': return '澳储行'
+      case 'DE': return '德银'
+      default: return '央行'
+    }
+  }
+
+  const centralBankName = getCentralBankName()
+
   // 格式化日期显示
   const formatDate = (dateStr: string) => {
     const [year, month] = dateStr.split('-')
@@ -99,9 +124,9 @@ export function InflationChart({ data: inflationData, loading: isLoading = false
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">美国通胀率走势（YoY）</h2>
+        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">{countryName}通胀率走势（YoY）</h2>
         <p className="text-sm text-[var(--text-secondary)]">
-          基于 CPI 指数计算的同比通胀率，美联储目标为 2%
+          基于 CPI 指数计算的同比通胀率，{centralBankName}目标为 {targetRate}%
         </p>
       </div>
 
@@ -125,7 +150,7 @@ export function InflationChart({ data: inflationData, loading: isLoading = false
           <div className="text-xs text-[var(--text-muted)] mt-1">{formatDate(peakDate)}</div>
         </div>
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
-          <div className="text-xs text-[var(--text-muted)] mb-1">美联储目标</div>
+          <div className="text-xs text-[var(--text-muted)] mb-1">{centralBankName}目标</div>
           <div className="text-2xl font-bold text-emerald-400">{targetRate.toFixed(1)}%</div>
           <div className="text-xs text-[var(--text-muted)] mt-1">长期目标</div>
         </div>
@@ -156,7 +181,7 @@ export function InflationChart({ data: inflationData, loading: isLoading = false
               formatter={(value: number | undefined) => value !== undefined ? [`${value}%`, '通胀率'] : ['-', '通胀率']}
               labelFormatter={(label) => `日期: ${label}`}
             />
-            <ReferenceLine y={targetRate} stroke="#10b981" strokeDasharray="3 3" label="目标2%" />
+            <ReferenceLine y={targetRate} stroke="#10b981" strokeDasharray="3 3" label={`目标${targetRate}%`} />
             <Line
               type="monotone"
               dataKey="value"

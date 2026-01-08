@@ -148,6 +148,8 @@ export function EconomyPage() {
                 }))}
                 loading={isLoading.country}
                 error={errors.country}
+                countryName={currentCountryData.name}
+                countryCode={selectedCountry}
               />
             )}
             {activeChart === 'inflation' && (
@@ -155,6 +157,8 @@ export function EconomyPage() {
                 data={currentCountryData.inflation}
                 loading={isLoading.country}
                 error={errors.country}
+                countryName={currentCountryData.name}
+                countryCode={selectedCountry}
               />
             )}
             {activeChart === 'unemployment' && (
@@ -162,6 +166,8 @@ export function EconomyPage() {
                 data={currentCountryData.unemployment}
                 loading={isLoading.country}
                 error={errors.country}
+                countryName={currentCountryData.name}
+                countryCode={selectedCountry}
               />
             )}
           </>
