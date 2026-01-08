@@ -76,6 +76,7 @@ interface EconomicState {
     interestRate: string
     inflation: string
     unemployment: string
+    exchangeRate?: string
   }
 }
 
@@ -445,7 +446,8 @@ export const useEconomicStore = create<EconomicState>()(
           CN: {
             interestRate: 'DR007利率',
             inflation: 'M2货币供应量',
-            unemployment: '社会融资规模'
+            unemployment: '社会融资规模',
+            exchangeRate: '人民币汇率'
           }
         }
         

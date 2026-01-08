@@ -1,4 +1,4 @@
-import { TrendingUp, Activity, Briefcase, Bitcoin } from 'lucide-react'
+import { TrendingUp, Activity, Briefcase, Bitcoin, DollarSign } from 'lucide-react'
 
 interface DataCardProps {
   title: string
@@ -9,7 +9,7 @@ interface DataCardProps {
   error?: string | null
   color?: 'violet' | 'amber' | 'emerald' | 'blue' | 'orange'
   formatter?: (value: number) => string
-  icon?: 'fed-rate' | 'inflation' | 'unemployment' | 'crypto'
+  icon?: 'fed-rate' | 'inflation' | 'unemployment' | 'crypto' | 'exchange-rate'
   subtitle?: string
 }
 
@@ -17,7 +17,8 @@ const iconMap = {
   'fed-rate': TrendingUp,
   'inflation': Activity,
   'unemployment': Briefcase,
-  'crypto': Bitcoin
+  'crypto': Bitcoin,
+  'exchange-rate': DollarSign
 }
 
 // 格式化日期显示

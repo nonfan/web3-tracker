@@ -6,9 +6,9 @@ import { DataCard } from '../components/economy/DataCard'
 import { CountrySelector } from '../components/economy/CountrySelector'
 import { useEconomicStore } from '../store/economicStore'
 import { useAutoRefresh, useVisibilityRefresh } from '../hooks/useAutoRefresh'
-import { TrendingUp, Activity, Briefcase } from 'lucide-react'
+import { TrendingUp, Activity, Briefcase, DollarSign } from 'lucide-react'
 
-type ChartType = 'interest-rate' | 'inflation' | 'unemployment'
+type ChartType = 'interest-rate' | 'inflation' | 'unemployment' | 'exchange-rate'
 
 export function EconomyPage() {
   const [activeChart, setActiveChart] = useState<ChartType>('interest-rate')
@@ -42,6 +42,7 @@ export function EconomyPage() {
     getLatestChinaM2,
     getLatestChinaDR007,
     getLatestChinaSocialFinancing,
+    getLatestChinaUsdCny,
     getCurrentCountryLabels
   } = useEconomicStore()
   
@@ -64,6 +65,7 @@ export function EconomyPage() {
   const latestChinaM2 = getLatestChinaM2()
   const latestChinaDR007 = getLatestChinaDR007()
   const latestChinaSocialFinancing = getLatestChinaSocialFinancing()
+  const latestChinaUsdCny = getLatestChinaUsdCny()
   
   // 获取当前国家的标签
   const labels = getCurrentCountryLabels()
@@ -72,6 +74,9 @@ export function EconomyPage() {
     { id: 'interest-rate' as ChartType, label: labels.interestRate, icon: TrendingUp, color: 'violet' },
     { id: 'inflation' as ChartType, label: labels.inflation, icon: Activity, color: 'amber' },
     { id: 'unemployment' as ChartType, label: labels.unemployment, icon: Briefcase, color: 'emerald' },
+    ...(selectedCountry === 'CN' && labels.exchangeRate ? [
+      { id: 'exchange-rate' as ChartType, label: labels.exchangeRate, icon: DollarSign, color: 'blue' }
+    ] : [])
   ]
 
   return (
@@ -83,7 +88,7 @@ export function EconomyPage() {
       />
 
       {/* Stats Overview - 使用统一数据源 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className={`grid gap-3 ${selectedCountry === 'CN' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3'}`}>
         <DataCard
           title={labels.interestRate}
           value={selectedCountry === 'US' ? latestFedRate?.rate : latestChinaDR007?.value}
@@ -116,10 +121,24 @@ export function EconomyPage() {
           color="emerald"
           icon="unemployment"
         />
+        
+        {/* 中国专用：人民币汇率 */}
+        {selectedCountry === 'CN' && labels.exchangeRate && (
+          <DataCard
+            title={labels.exchangeRate}
+            value={latestChinaUsdCny?.value}
+            date={latestChinaUsdCny?.date}
+            unit="CNY"
+            loading={isLoading.chinaUsdCny}
+            error={errors.chinaUsdCny}
+            color="blue"
+            icon="exchange-rate"
+          />
+        )}
       </div>
 
       {/* Chart Selector */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className={`grid gap-3 ${selectedCountry === 'CN' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3'}`}>
         {charts.map((chart) => {
           const Icon = chart.icon
           const isActive = activeChart === chart.id
@@ -190,6 +209,7 @@ export function EconomyPage() {
               {activeChart === 'interest-rate' && '显示DR007利率走势'}
               {activeChart === 'inflation' && '显示M2货币供应量走势'}
               {activeChart === 'unemployment' && '显示社会融资规模走势'}
+              {activeChart === 'exchange-rate' && '显示人民币汇率走势'}
             </p>
             
             <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-8 max-w-md mx-auto">
@@ -202,6 +222,7 @@ export function EconomyPage() {
                     <p>• DR007数据: {chinaDR007Data.length} 个数据点</p>
                     <p>• M2数据: {chinaM2Data.length} 个数据点</p>
                     <p>• 社融数据: {chinaSocialFinancingData.length} 个数据点</p>
+                    <p>• 汇率数据: {chinaUsdCnyData.length} 个数据点</p>
                   </div>
                   <button
                     onClick={refreshAllData}
