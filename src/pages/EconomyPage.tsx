@@ -16,7 +16,15 @@ export function EconomyPage() {
   // 使用全局状态管理
   const {
     // 数据状态
-    currentCountryData,
+    fedRateData,
+    inflationData,
+    unemploymentData,
+    
+    // 中国数据状态
+    chinaM2Data,
+    chinaDR007Data,
+    chinaSocialFinancingData,
+    chinaUsdCnyData,
     
     // 元数据
     isLoading,
@@ -28,9 +36,12 @@ export function EconomyPage() {
     refreshAllData,
     
     // 便捷方法
-    getLatestInterestRate,
+    getLatestFedRate,
     getLatestInflation,
     getLatestUnemployment,
+    getLatestChinaM2,
+    getLatestChinaDR007,
+    getLatestChinaSocialFinancing,
     getCurrentCountryLabels
   } = useEconomicStore()
   
@@ -45,9 +56,14 @@ export function EconomyPage() {
   }, [refreshAllData])
   
   // 获取最新数据
-  const latestInterestRate = getLatestInterestRate()
+  const latestFedRate = getLatestFedRate()
   const latestInflation = getLatestInflation()
   const latestUnemployment = getLatestUnemployment()
+  
+  // 获取中国数据
+  const latestChinaM2 = getLatestChinaM2()
+  const latestChinaDR007 = getLatestChinaDR007()
+  const latestChinaSocialFinancing = getLatestChinaSocialFinancing()
   
   // 获取当前国家的标签
   const labels = getCurrentCountryLabels()
@@ -70,33 +86,33 @@ export function EconomyPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <DataCard
           title={labels.interestRate}
-          value={latestInterestRate?.value}
-          date={latestInterestRate?.date}
+          value={selectedCountry === 'US' ? latestFedRate?.rate : latestChinaDR007?.value}
+          date={selectedCountry === 'US' ? latestFedRate?.date : latestChinaDR007?.date}
           unit="%"
-          loading={isLoading.country}
-          error={errors.country}
+          loading={selectedCountry === 'US' ? isLoading.fedRate : isLoading.chinaDR007}
+          error={selectedCountry === 'US' ? errors.fedRate : errors.chinaDR007}
           color="violet"
           icon="fed-rate"
         />
         
         <DataCard
           title={labels.inflation}
-          value={latestInflation?.value}
-          date={latestInflation?.date}
-          unit="%"
-          loading={isLoading.country}
-          error={errors.country}
+          value={selectedCountry === 'US' ? latestInflation?.value : latestChinaM2?.value}
+          date={selectedCountry === 'US' ? latestInflation?.date : latestChinaM2?.date}
+          unit={selectedCountry === 'US' ? '%' : '万亿元'}
+          loading={selectedCountry === 'US' ? isLoading.inflation : isLoading.chinaM2}
+          error={selectedCountry === 'US' ? errors.inflation : errors.chinaM2}
           color="amber"
           icon="inflation"
         />
         
         <DataCard
           title={labels.unemployment}
-          value={latestUnemployment?.value}
-          date={latestUnemployment?.date}
-          unit="%"
-          loading={isLoading.country}
-          error={errors.country}
+          value={selectedCountry === 'US' ? latestUnemployment?.value : latestChinaSocialFinancing?.value}
+          date={selectedCountry === 'US' ? latestUnemployment?.date : latestChinaSocialFinancing?.date}
+          unit={selectedCountry === 'US' ? '%' : '万亿元'}
+          loading={selectedCountry === 'US' ? isLoading.unemployment : isLoading.chinaSocialFinancing}
+          error={selectedCountry === 'US' ? errors.unemployment : errors.chinaSocialFinancing}
           color="emerald"
           icon="unemployment"
         />
@@ -136,97 +152,88 @@ export function EconomyPage() {
 
       {/* Chart Display */}
       <div className="bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-6">
-        {currentCountryData ? (
+        {selectedCountry === 'US' ? (
           <>
             {activeChart === 'interest-rate' && (
               <FedRateChart 
-                data={currentCountryData.interestRate.map(item => ({
-                  date: item.date,
-                  rate: item.value,
-                  change: 0, // TODO: 计算变化
-                  type: 'actual' as const
-                }))}
-                loading={isLoading.country}
-                error={errors.country}
-                countryName={currentCountryData.name}
-                countryCode={selectedCountry}
+                data={fedRateData}
+                loading={isLoading.fedRate}
+                error={errors.fedRate}
+                countryName="美国"
+                countryCode="US"
               />
             )}
             {activeChart === 'inflation' && (
               <InflationChart 
-                data={currentCountryData.inflation}
-                loading={isLoading.country}
-                error={errors.country}
-                countryName={currentCountryData.name}
-                countryCode={selectedCountry}
+                data={inflationData}
+                loading={isLoading.inflation}
+                error={errors.inflation}
+                countryName="美国"
+                countryCode="US"
               />
             )}
             {activeChart === 'unemployment' && (
               <UnemploymentChart 
-                data={currentCountryData.unemployment}
-                loading={isLoading.country}
-                error={errors.country}
-                countryName={currentCountryData.name}
-                countryCode={selectedCountry}
+                data={unemploymentData}
+                loading={isLoading.unemployment}
+                error={errors.unemployment}
+                countryName="美国"
+                countryCode="US"
               />
             )}
           </>
-        ) : (
+        ) : selectedCountry === 'CN' ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">
-              {selectedCountry === 'CN' ? '🇨🇳' :
-               selectedCountry === 'EU' ? '🇪🇺' :
-               selectedCountry === 'JP' ? '🇯🇵' :
-               selectedCountry === 'UK' ? '🇬🇧' :
-               selectedCountry === 'CA' ? '🇨🇦' :
-               selectedCountry === 'AU' ? '🇦🇺' :
-               selectedCountry === 'DE' ? '🇩🇪' : 
-               selectedCountry === 'US' ? '🇺🇸' : '🏳️'}
-            </div>
-            <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
-              {selectedCountry === 'CN' ? '中国' :
-               selectedCountry === 'EU' ? '欧盟' :
-               selectedCountry === 'JP' ? '日本' :
-               selectedCountry === 'UK' ? '英国' :
-               selectedCountry === 'CA' ? '加拿大' :
-               selectedCountry === 'AU' ? '澳大利亚' :
-               selectedCountry === 'DE' ? '德国' :
-               selectedCountry === 'US' ? '美国' : '其他国家'}经济数据
-            </h3>
+            <div className="text-6xl mb-4">🇨🇳</div>
+            <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">中国经济数据图表</h3>
             <p className="text-[var(--text-secondary)] mb-6">
-              {isLoading.country ? '正在加载数据...' : 
-               selectedCountry === 'US' ? '请配置 GitHub Gist 来获取经济数据' :
-               `${labels.interestRate}数据正在开发中`}
+              {activeChart === 'interest-rate' && '显示DR007利率走势'}
+              {activeChart === 'inflation' && '显示M2货币供应量走势'}
+              {activeChart === 'unemployment' && '显示社会融资规模走势'}
             </p>
             
-            {!isLoading.country && (
-              <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-8 max-w-md mx-auto">
-                {selectedCountry === 'US' ? (
-                  <div className="text-[var(--text-muted)] text-sm space-y-2">
-                    <p>📊 请配置 GitHub Gist</p>
-                    <p>🔑 设置 API Token</p>
-                    <p>📈 启用数据同步</p>
-                    <div className="mt-4">
-                      <button
-                        onClick={refreshAllData}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                      >
-                        重新加载
-                      </button>
-                    </div>
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-8 max-w-md mx-auto">
+              <div className="text-[var(--text-muted)] text-sm space-y-2">
+                <p>📊 中国经济数据已配置</p>
+                <p>📈 数据卡片已显示最新数值</p>
+                <p>🔄 图表功能开发中</p>
+                <div className="mt-4 space-y-2">
+                  <div className="text-xs text-left">
+                    <p>• DR007数据: {chinaDR007Data.length} 个数据点</p>
+                    <p>• M2数据: {chinaM2Data.length} 个数据点</p>
+                    <p>• 社融数据: {chinaSocialFinancingData.length} 个数据点</p>
                   </div>
-                ) : (
-                  <div className="text-[var(--text-muted)] text-sm space-y-2">
-                    <p>📊 数据源整合中</p>
-                    <p>🔄 API 接口开发中</p>
-                    <p>📈 图表组件适配中</p>
-                    <div className="mt-4 text-xs text-[var(--text-muted)]">
-                      预计完成时间：2025年Q2
-                    </div>
-                  </div>
-                )}
+                  <button
+                    onClick={refreshAllData}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                  >
+                    重新加载数据
+                  </button>
+                </div>
               </div>
-            )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🌍</div>
+            <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">其他国家数据</h3>
+            <p className="text-[var(--text-secondary)] mb-6">
+              该国家的经济数据正在开发中
+            </p>
+            
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-8 max-w-md mx-auto">
+              <div className="text-[var(--text-muted)] text-sm space-y-2">
+                <p>🔄 数据获取功能开发中</p>
+                <div className="mt-4">
+                  <button
+                    onClick={refreshAllData}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                  >
+                    重新加载
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
