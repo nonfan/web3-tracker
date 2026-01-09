@@ -16,6 +16,20 @@ export interface ChinaEconomicData {
   lastUpdated: string
 }
 
+// Gist 中实际的数据结构
+export interface GistChinaEconomicData {
+  lastUpdate: string
+  country: string
+  name: string
+  currency: string
+  data: {
+    m2MoneySupply: Array<{ date: string; value: number }>
+    dr007Rate: Array<{ date: string; value: number }>
+    socialFinancing: Array<{ date: string; value: number }>
+    usdCnyRate: Array<{ date: string; value: number }>
+  }
+}
+
 /**
  * 从 Gist 获取中国经济数据
  * 
@@ -49,24 +63,41 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
       return null
     }
 
-    const data = JSON.parse(chinaDataFile.content)
+    const rawData = JSON.parse(chinaDataFile.content)
+    console.log('🇨🇳 原始中国数据结构:', rawData)
     
-    // 检查数据源类型和数据完整性
-    if (data.dataSource === 'REAL_API') {
-      // 验证数据完整性
-      if (!data.m2 || !data.dr007 || !data.socialFinancing || !data.usdCny ||
-          data.m2.length === 0 || data.dr007.length === 0 || 
-          data.socialFinancing.length === 0 || data.usdCny.length === 0) {
-        console.warn('⚠️ 中国经济数据不完整，不显示数据')
-        return null
-      }
-      
-      console.log('✅ 使用真实中国经济数据')
-      console.log('📊 数据来源:', data.sources)
-    } else {
-      console.warn('⚠️ 中国经济数据源未知，不显示数据')
+    // 检查是否有 chinaEconomicData 字段
+    const chinaData = rawData.chinaEconomicData || rawData
+    
+    if (!chinaData || !chinaData.data) {
+      console.warn('⚠️ 中国经济数据结构不正确')
       return null
     }
+    
+    // 转换数据结构以匹配我们的接口
+    const data: ChinaEconomicData = {
+      m2: chinaData.data.m2MoneySupply || [],
+      dr007: chinaData.data.dr007Rate || [],
+      socialFinancing: chinaData.data.socialFinancing || [],
+      usdCny: chinaData.data.usdCnyRate || [],
+      lastUpdated: chinaData.lastUpdate || new Date().toISOString()
+    }
+    
+    // 验证数据完整性
+    const hasData = data.m2.length > 0 || data.dr007.length > 0 || 
+                   data.socialFinancing.length > 0 || data.usdCny.length > 0
+    
+    if (!hasData) {
+      console.warn('⚠️ 中国经济数据为空，不显示数据')
+      return null
+    }
+    
+    console.log('✅ 成功获取中国经济数据:', {
+      m2: data.m2.length,
+      dr007: data.dr007.length,
+      socialFinancing: data.socialFinancing.length,
+      usdCny: data.usdCny.length
+    })
     
     return data
   } catch (error) {
