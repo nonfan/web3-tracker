@@ -68,6 +68,15 @@ export function CountrySelector({ selectedCountry, onCountryChange, availableCou
         <div className="flex items-center gap-2 text-blue-400 text-sm">
           <div className="w-2 h-2 rounded-full bg-blue-400"></div>
           <span className="font-medium">数据来源</span>
+          <button
+            onClick={() => {
+              console.log('🔄 手动刷新数据')
+              window.location.reload()
+            }}
+            className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+          >
+            刷新数据
+          </button>
         </div>
         <p className="text-xs text-[var(--text-muted)] mt-1">
           {selectedCountry === 'US' 

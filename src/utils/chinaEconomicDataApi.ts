@@ -43,6 +43,8 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
       // 从环境变量获取 GIST_ID 作为后备
       economicGistId = import.meta.env.VITE_GIST_ID || 'cdd0e8f0991321350c731d718ba807b5'
       console.log('🔧 使用环境变量中的 Gist ID:', economicGistId)
+    } else {
+      console.log('🔧 使用 localStorage 中的 Gist ID:', economicGistId)
     }
     
     if (!economicGistId) {
@@ -50,29 +52,52 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
       return null
     }
 
+    console.log('🌐 正在获取 Gist 数据:', `https://api.github.com/gists/${economicGistId}`)
     const response = await fetch(`https://api.github.com/gists/${economicGistId}`)
     if (!response.ok) {
+      console.error('❌ Gist API 请求失败:', response.status, response.statusText)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
     const gist = await response.json()
-    const chinaDataFile = gist.files['china-economic-data.json']
+    console.log('📁 Gist 文件列表:', Object.keys(gist.files))
     
-    if (!chinaDataFile) {
-      console.warn('Gist 中未找到中国经济数据文件')
+    // 尝试多个可能的文件名
+    const possibleFileNames = [
+      'economic-data.json',        // 主要的经济数据文件
+      'china-economic-data.json',  // 中国专用数据文件
+      'us-economic-data.json'      // 美国专用数据文件
+    ]
+    
+    let dataFile = null
+    let fileName = ''
+    
+    for (const name of possibleFileNames) {
+      if (gist.files[name]) {
+        dataFile = gist.files[name]
+        fileName = name
+        break
+      }
+    }
+    
+    if (!dataFile) {
+      console.warn('❌ Gist 中未找到经济数据文件，可用文件:', Object.keys(gist.files))
       return null
     }
 
-    const rawData = JSON.parse(chinaDataFile.content)
-    console.log('🇨🇳 原始中国数据结构:', rawData)
+    console.log('📄 使用文件:', fileName)
+    const rawData = JSON.parse(dataFile.content)
+    console.log('🇨🇳 原始数据结构:', Object.keys(rawData))
     
     // 检查是否有 chinaEconomicData 字段
     const chinaData = rawData.chinaEconomicData || rawData
     
     if (!chinaData || !chinaData.data) {
-      console.warn('⚠️ 中国经济数据结构不正确')
+      console.warn('⚠️ 中国经济数据结构不正确，数据结构:', chinaData)
       return null
     }
+    
+    console.log('🇨🇳 中国数据字段:', Object.keys(chinaData.data))
     
     // 转换数据结构以匹配我们的接口
     const data: ChinaEconomicData = {
@@ -101,7 +126,7 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
     
     return data
   } catch (error) {
-    console.error('获取中国经济数据失败:', error)
+    console.error('❌ 获取中国经济数据失败:', error)
     return null
   }
 }
