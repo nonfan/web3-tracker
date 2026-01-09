@@ -360,10 +360,12 @@ export function GistSync() {
     if (remoteData) {
       const imported = importData(remoteData)
       if (imported) {
-        // 获取云端版本号并更新同步状态
+        // 获取云端版本号并更新同步状态（包含 updatedAt）
         try {
           const parsed = JSON.parse(remoteData)
-          updateSyncStateAfterPull(remoteData, parsed.syncVersion || 0)
+          // 从冲突数据中无法获取 updatedAt，需要重新拉取
+          const pullResult = await pullFromGist()
+          updateSyncStateAfterPull(remoteData, parsed.syncVersion || 0, pullResult.updatedAt)
         } catch {
           // 忽略解析错误
         }
@@ -384,8 +386,8 @@ export function GistSync() {
     if (result.success && result.data) {
       const imported = importData(result.data)
       if (imported) {
-        // 更新同步状态
-        updateSyncStateAfterPull(result.data, result.version || 0)
+        // 更新同步状态（包含远程 updatedAt 用于乐观锁）
+        updateSyncStateAfterPull(result.data, result.version || 0, result.updatedAt)
         showMessage('success', '已从云端拉取数据')
       } else {
         showMessage('error', '数据格式错误')

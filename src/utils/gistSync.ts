@@ -10,11 +10,12 @@ interface GistConfig {
   economicGistId: string | null   // 经济数据 Gist ID
 }
 
-// 同步状态：记录上次同步的版本号
+// 同步状态：记录上次同步的版本号和远程更新时间（乐观锁）
 interface SyncState {
-  version: number        // 版本号
-  lastSyncAt: number     // 上次同步时间
-  lastSyncHash: string   // 上次同步时的数据哈希
+  version: number           // 本地版本号
+  lastSyncAt: number        // 上次同步时间
+  lastSyncHash: string      // 上次同步时的数据哈希
+  remoteUpdatedAt?: string  // 远程 Gist 的 updated_at（乐观锁关键字段）
 }
 
 export interface GistInfo {
@@ -281,8 +282,8 @@ export async function validateToken(token: string): Promise<boolean> {
   }
 }
 
-// 创建新的私有 Gist
-async function createGist(token: string, data: string, version: number): Promise<string> {
+// 创建新的私有 Gist（返回 id 和 updated_at）
+async function createGist(token: string, data: string, version: number): Promise<{ id: string; updatedAt: string }> {
   // 添加版本号到数据中
   const dataObj = JSON.parse(data)
   dataObj.syncVersion = version
@@ -309,11 +310,11 @@ async function createGist(token: string, data: string, version: number): Promise
   }
 
   const gist = await response.json()
-  return gist.id
+  return { id: gist.id, updatedAt: gist.updated_at }
 }
 
-// 更新现有 Gist
-async function updateGist(token: string, gistId: string, data: string, version: number): Promise<void> {
+// 更新现有 Gist（返回新的 updated_at）
+async function updateGist(token: string, gistId: string, data: string, version: number): Promise<string> {
   // 添加版本号到数据中
   const dataObj = JSON.parse(data)
   dataObj.syncVersion = version
@@ -339,10 +340,19 @@ async function updateGist(token: string, gistId: string, data: string, version: 
     }
     throw new Error(`Failed to update gist: ${response.status}`)
   }
+  
+  const gist = await response.json()
+  return gist.updated_at
 }
 
-// 从 Gist 读取数据
-async function readGist(token: string, gistId: string): Promise<string | null> {
+// 从 Gist 读取数据（返回内容和元数据）
+interface GistReadResult {
+  content: string | null
+  updatedAt: string | null
+  version: number
+}
+
+async function readGist(token: string, gistId: string): Promise<GistReadResult | null> {
   const response = await fetch(`https://api.github.com/gists/${gistId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -358,7 +368,25 @@ async function readGist(token: string, gistId: string): Promise<string | null> {
 
   const gist = await response.json()
   const file = gist.files[GIST_FILENAME]
-  return file ? file.content : null
+  
+  if (!file) {
+    return null
+  }
+  
+  // 解析版本号
+  let version = 0
+  try {
+    const dataObj = JSON.parse(file.content)
+    version = dataObj.syncVersion || 0
+  } catch {
+    // 忽略解析错误
+  }
+  
+  return {
+    content: file.content,
+    updatedAt: gist.updated_at,
+    version
+  }
 }
 
 // 删除 Gist
@@ -376,7 +404,7 @@ export async function deleteGist(token: string, gistId: string): Promise<boolean
   }
 }
 
-// 同步数据到 Gist（带版本控制）
+// 同步数据到 Gist（带乐观锁版本控制）
 export async function syncToGist(data: string): Promise<{ 
   success: boolean
   error?: string
@@ -397,41 +425,66 @@ export async function syncToGist(data: string): Promise<{
 
   try {
     if (gistId) {
-      // 先拉取云端数据检查冲突
-      const remoteData = await readGist(config.token, gistId)
+      // 【乐观锁核心】先拉取云端数据，检查 updated_at 是否变化
+      const remoteResult = await readGist(config.token, gistId)
       
-      if (remoteData) {
-        const diff = compareDataWithSync(data, remoteData, syncState)
+      if (remoteResult && remoteResult.content) {
+        // 检查乐观锁：远程 updated_at 是否与上次同步时一致
+        const lastRemoteUpdatedAt = syncState?.remoteUpdatedAt
         
-        if (diff.hasConflict) {
-          // 有冲突，返回差异信息让用户处理
+        if (lastRemoteUpdatedAt && remoteResult.updatedAt !== lastRemoteUpdatedAt) {
+          // 远程已被其他设备更新，需要先处理冲突
+          console.log('🔒 乐观锁检测到冲突:', {
+            lastKnown: lastRemoteUpdatedAt,
+            current: remoteResult.updatedAt
+          })
+          
+          const diff = compareDataWithSync(data, remoteResult.content, syncState)
+          
+          // 即使 diff 显示无冲突，也要提示用户远程有更新
           return { 
             success: false, 
             conflict: true, 
             diff,
-            remoteData,
+            remoteData: remoteResult.content,
+            error: '云端数据已被其他设备更新，请先拉取最新数据'
+          }
+        }
+        
+        // 即使 updated_at 一致，也检查数据差异
+        const diff = compareDataWithSync(data, remoteResult.content, syncState)
+        
+        if (diff.hasConflict) {
+          return { 
+            success: false, 
+            conflict: true, 
+            diff,
+            remoteData: remoteResult.content,
             error: '检测到数据冲突，请先处理'
           }
         }
       }
       
-      // 无冲突，直接更新
+      // 无冲突，执行更新
       try {
-        await updateGist(config.token, gistId, data, currentVersion)
-        // 更新同步状态
+        const newUpdatedAt = await updateGist(config.token, gistId, data, currentVersion)
+        // 更新同步状态（包含新的 remoteUpdatedAt）
         saveSyncState({
           version: currentVersion,
           lastSyncAt: Date.now(),
           lastSyncHash: simpleHash(data),
+          remoteUpdatedAt: newUpdatedAt,
         })
+        console.log('✅ 同步成功，新版本:', currentVersion, '远程时间:', newUpdatedAt)
       } catch (e) {
         if (e instanceof Error && e.message === 'GIST_NOT_FOUND') {
-          const newGistId = await createGist(config.token, data, currentVersion)
-          saveGistConfig({ ...config, projectGistId: newGistId })
+          const result = await createGist(config.token, data, currentVersion)
+          saveGistConfig({ ...config, projectGistId: result.id })
           saveSyncState({
             version: currentVersion,
             lastSyncAt: Date.now(),
             lastSyncHash: simpleHash(data),
+            remoteUpdatedAt: result.updatedAt,
           })
         } else {
           throw e
@@ -445,12 +498,13 @@ export async function syncToGist(data: string): Promise<{
         return { success: false, needSelect: true, error: `已有 ${projectGists.length} 个项目数据存储，请先在设置中选择要使用的存储` }
       }
       // 没有已有的，创建新的
-      const gistId = await createGist(config.token, data, currentVersion)
-      saveGistConfig({ ...config, projectGistId: gistId })
+      const result = await createGist(config.token, data, currentVersion)
+      saveGistConfig({ ...config, projectGistId: result.id })
       saveSyncState({
         version: currentVersion,
         lastSyncAt: Date.now(),
         lastSyncHash: simpleHash(data),
+        remoteUpdatedAt: result.updatedAt,
       })
     }
     return { success: true }
@@ -459,7 +513,7 @@ export async function syncToGist(data: string): Promise<{
   }
 }
 
-// 强制推送（忽略冲突）
+// 强制推送（忽略冲突，用于用户确认后覆盖）
 export async function forcePushToGist(data: string): Promise<{ success: boolean; error?: string }> {
   const config = getGistConfig()
   if (!config?.token || !config.projectGistId) {
@@ -470,12 +524,14 @@ export async function forcePushToGist(data: string): Promise<{ success: boolean;
   const currentVersion = (syncState?.version || 0) + 1
 
   try {
-    await updateGist(config.token, config.projectGistId, data, currentVersion)
+    const newUpdatedAt = await updateGist(config.token, config.projectGistId, data, currentVersion)
     saveSyncState({
       version: currentVersion,
       lastSyncAt: Date.now(),
       lastSyncHash: simpleHash(data),
+      remoteUpdatedAt: newUpdatedAt,
     })
+    console.log('✅ 强制推送成功，新版本:', currentVersion)
     return { success: true }
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '推送失败' }
@@ -483,7 +539,13 @@ export async function forcePushToGist(data: string): Promise<{ success: boolean;
 }
 
 // 从 Gist 拉取数据
-export async function pullFromGist(): Promise<{ success: boolean; data?: string; error?: string; version?: number }> {
+export async function pullFromGist(): Promise<{ 
+  success: boolean
+  data?: string
+  error?: string
+  version?: number
+  updatedAt?: string
+}> {
   const config = getGistConfig()
   if (!config?.token) {
     return { success: false, error: '未配置 GitHub Token' }
@@ -494,26 +556,29 @@ export async function pullFromGist(): Promise<{ success: boolean; data?: string;
   }
 
   try {
-    const data = await readGist(config.token, config.projectGistId)
-    if (!data) {
+    const result = await readGist(config.token, config.projectGistId)
+    if (!result || !result.content) {
       return { success: false, error: '云端数据为空' }
     }
     
-    // 解析版本号
-    const dataObj = JSON.parse(data)
-    const version = dataObj.syncVersion || 0
-    
-    return { success: true, data, version }
+    return { 
+      success: true, 
+      data: result.content, 
+      version: result.version,
+      updatedAt: result.updatedAt || undefined
+    }
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '拉取失败' }
   }
 }
 
-// 拉取后更新同步状态
-export function updateSyncStateAfterPull(data: string, version: number) {
+// 拉取后更新同步状态（包含远程 updated_at）
+export function updateSyncStateAfterPull(data: string, version: number, remoteUpdatedAt?: string) {
   saveSyncState({
     version,
     lastSyncAt: Date.now(),
     lastSyncHash: simpleHash(data),
+    remoteUpdatedAt,
   })
+  console.log('✅ 拉取完成，同步状态已更新，版本:', version)
 }
