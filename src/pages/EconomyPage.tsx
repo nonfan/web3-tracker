@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { FedRateChart } from '../components/economy/FedRateChart'
 import { InflationChart } from '../components/economy/InflationChart'
 import { UnemploymentChart } from '../components/economy/UnemploymentChart'
@@ -13,6 +13,7 @@ type ChartType = 'interest-rate' | 'inflation' | 'unemployment' | 'exchange-rate
 
 export function EconomyPage() {
   const [activeChart, setActiveChart] = useState<ChartType>('interest-rate')
+  const hasInitialized = useRef(false)
   
   // 使用全局状态管理
   const {
@@ -55,15 +56,6 @@ export function EconomyPage() {
   const isChinaDataAvailable = chinaM2Data.length > 0 || chinaDR007Data.length > 0 || 
                                chinaSocialFinancingData.length > 0 || chinaUsdCnyData.length > 0
   
-  // 调试信息
-  console.log('🇨🇳 China data status:', {
-    m2: chinaM2Data.length,
-    dr007: chinaDR007Data.length,
-    socialFinancing: chinaSocialFinancingData.length,
-    usdCny: chinaUsdCnyData.length,
-    available: isChinaDataAvailable
-  })
-  
   // 可用的国家列表
   const availableCountries = ['US'] // 美国数据总是可用
   if (isChinaDataAvailable) {
@@ -77,11 +69,14 @@ export function EconomyPage() {
     }
   }, [selectedCountry, isChinaDataAvailable, setSelectedCountry])
   
-  // 页面加载时确保数据已加载
+  // 页面加载时确保数据已加载 - 只执行一次
   useEffect(() => {
-    console.log('📊 Initial data load for EconomyPage')
-    refreshAllData()
-  }, [refreshAllData])
+    if (!hasInitialized.current) {
+      hasInitialized.current = true
+      console.log('📊 Initial data load for EconomyPage')
+      refreshAllData()
+    }
+  }, []) // 空依赖数组，只在挂载时执行一次
   
   // 获取最新数据
   const latestFedRate = getLatestFedRate()

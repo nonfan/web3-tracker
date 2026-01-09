@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useStore } from '../store/useStore'
 import type { Project } from '../types'
 import {
@@ -17,6 +18,24 @@ import {
 import { Tooltip } from './Tooltip'
 import { Cloud, CloudOff, RefreshCw, Settings, X, Check, AlertCircle, ChevronDown, AlertTriangle } from 'lucide-react'
 import gsap from 'gsap'
+
+// Modal 组件 - 使用 Portal 渲染到 body
+function Modal({ children, onClose }: { children: React.ReactNode; onClose?: () => void }) {
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      style={{ zIndex: 99999 }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && onClose) {
+          onClose()
+        }
+      }}
+    >
+      {children}
+    </div>,
+    document.body
+  )
+}
 
 // 复制按钮组件，带勾选状态反馈
 function CopyButton({ text, onCopy, className = '' }: { text: string; onCopy?: () => void; className?: string }) {
@@ -85,7 +104,6 @@ function GistDropdown({ label, value, options, onChange, formatDate, type }: Gis
     ? `${selectedOption.fileName || selectedOption.description || selectedOption.id.slice(0, 8) + '...'} (更新于 ${formatDate(selectedOption.updatedAt)})`
     : '创建新存储'
 
-  const colorClass = type === 'economic' ? 'emerald' : 'violet'
   const focusRingClass = type === 'economic' ? 'focus:ring-emerald-500/50 focus:border-emerald-500/50' : 'focus:ring-violet-500/50 focus:border-violet-500/50'
   const bgColorClass = type === 'economic' ? 'bg-emerald-400' : 'bg-violet-400'
   const selectedBgClass = type === 'economic' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-violet-500/10 text-violet-400'
@@ -110,7 +128,8 @@ function GistDropdown({ label, value, options, onChange, formatDate, type }: Gis
       {isOpen && (
         <div 
           ref={menuRef}
-          className="absolute top-full left-0 right-0 mt-1 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl shadow-xl overflow-hidden z-[60] max-h-60 overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-1 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl shadow-xl overflow-hidden max-h-60 overflow-y-auto"
+          style={{ zIndex: 100000 }}
         >
           <button
             type="button"
@@ -193,6 +212,13 @@ export function GistSync() {
       setEconomicGistId(config.economicGistId || '')
     }
   }, [])
+
+  // 当弹窗打开且有 token 时自动加载 Gist 列表
+  useEffect(() => {
+    if (showSettings && token && token.startsWith('ghp_') && gistList.length === 0) {
+      loadGistList(token)
+    }
+  }, [showSettings, token])
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text })
@@ -427,7 +453,12 @@ export function GistSync() {
           <Tooltip content="配置云同步">
             <button
               data-gist-settings
-              onClick={() => setShowSettings(true)}
+              onClick={() => {
+                setShowSettings(true)
+                if (token) {
+                  loadGistList(token)
+                }
+              }}
               className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] transition-all"
             >
               <CloudOff className="w-4 h-4" />
@@ -436,14 +467,15 @@ export function GistSync() {
         )}
       </div>
 
-      {/* Message Toast - z-[9999] 确保在所有遮罩层之上 */}
+      {/* Message Toast - z-[10001] 确保在所有遮罩层之上 */}
       {message && (
         <div
-          className={`fixed top-4 right-4 px-4 py-3 rounded-xl flex items-center gap-2 z-[9999] shadow-lg ${
+          className={`fixed top-4 right-4 px-4 py-3 rounded-xl flex items-center gap-2 shadow-lg ${
             message.type === 'success'
               ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400'
               : 'bg-red-500/20 border border-red-500/30 text-red-400'
           }`}
+          style={{ zIndex: 10001 }}
         >
           {message.type === 'success' ? (
             <Check className="w-4 h-4" />
@@ -456,19 +488,31 @@ export function GistSync() {
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <Modal onClose={() => setShowSettings(false)}>
           <div className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-md border border-[var(--border-hover)] shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold flex items-center gap-2 text-[var(--text-primary)]">
                 <Cloud className="w-5 h-5 text-violet-400" />
                 GitHub Gist 同步
               </h2>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="p-2 hover:bg-[var(--input-bg)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-1">
+                <Tooltip content="技术文档">
+                  <button
+                    onClick={() => setShowTechDocs(true)}
+                    className="p-2 hover:bg-blue-500/20 rounded-lg text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </button>
+                </Tooltip>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="p-2 hover:bg-[var(--input-bg)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -565,15 +609,6 @@ export function GistSync() {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowTechDocs(true)}
-                className="px-4 py-3 bg-blue-500/20 border border-blue-500/30 rounded-xl font-medium text-blue-400 hover:bg-blue-500/30 transition-all flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                技术文档
-              </button>
               {isConfigured && (
                 <button
                   onClick={handleDisconnect}
@@ -597,12 +632,12 @@ export function GistSync() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Conflict Modal */}
       {showConflict && conflictDiff && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <Modal onClose={() => { setShowConflict(false); setConflictDiff(null); }}>
           <div className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-lg border border-[var(--border-hover)] shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold flex items-center gap-2 text-amber-400">
@@ -721,12 +756,12 @@ export function GistSync() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Tech Documentation Modal */}
       {showTechDocs && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <Modal onClose={() => setShowTechDocs(false)}>
           <div className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-4xl border border-[var(--border-hover)] shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold flex items-center gap-2 text-[var(--text-primary)]">
@@ -1248,7 +1283,7 @@ if __name__ == "__main__":
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </>
   )

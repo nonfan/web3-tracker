@@ -188,18 +188,22 @@ export function Analytics({ projects, isOpen, onClose }: Props) {
 
               <div className="p-4 bg-[var(--input-bg)] rounded-xl">
                 <div className="text-sm text-[var(--text-muted)] mb-2">项目统计</div>
-                <div className="grid grid-cols-4 gap-4 text-center">
+                <div className="grid grid-cols-5 gap-4 text-center">
                   <div>
                     <div className="text-xl font-bold text-[var(--text-primary)]">{projects.length}</div>
                     <div className="text-xs text-[var(--text-muted)]">总项目</div>
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-emerald-400">{projects.filter(p => p.status === 'active').length}</div>
-                    <div className="text-xs text-[var(--text-muted)]">进行中</div>
+                    <div className="text-xl font-bold text-amber-400">{projects.filter(p => p.status === 'research').length}</div>
+                    <div className="text-xs text-[var(--text-muted)]">研究中</div>
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-violet-400">{projects.filter(p => p.status === 'launched').length}</div>
-                    <div className="text-xs text-[var(--text-muted)]">已发币</div>
+                    <div className="text-xl font-bold text-emerald-400">{projects.filter(p => p.status === 'active').length}</div>
+                    <div className="text-xs text-[var(--text-muted)]">交互中</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-blue-400">{projects.filter(p => p.status === 'completed').length}</div>
+                    <div className="text-xs text-[var(--text-muted)]">已完成</div>
                   </div>
                   <div>
                     <div className="text-xl font-bold text-gray-400">{projects.filter(p => p.status === 'dead').length}</div>

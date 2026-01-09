@@ -1,4 +1,4 @@
-export type ProjectStatus = 'active' | 'completed' | 'launched' | 'dead' | 'archived'
+export type ProjectStatus = 'research' | 'active' | 'completed' | 'dead' | 'archived' // 研究中、进行中、已完成、已凉、已归档
 export type Priority = 'high' | 'medium' | 'low'
 export type TransactionType = 'investment' | 'profit'
 

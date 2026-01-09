@@ -22,44 +22,42 @@ let cacheTimestamp = 0
 const CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
 
 /**
+ * 获取经济数据 Gist ID
+ * 优先级: localStorage > 环境变量 > 硬编码后备
+ */
+function getEconomicGistId(): string {
+  // 1. 优先使用 localStorage 中的配置
+  const localStorageId = localStorage.getItem('economicGistId')
+  if (localStorageId) {
+    return localStorageId
+  }
+  
+  // 2. 使用环境变量
+  const envGistId = import.meta.env.VITE_GIST_ID
+  if (envGistId) {
+    return envGistId
+  }
+  
+  // 3. 硬编码后备 - 确保在任何环境下都能工作
+  return 'cdd0e8f0991321350c731d718ba807b5'
+}
+
+/**
  * 从 Gist 获取中国经济数据
  */
 export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null> {
   // 检查缓存
   const now = Date.now()
   if (cachedData && (now - cacheTimestamp) < CACHE_DURATION) {
-    console.log('🔄 使用缓存的中国经济数据')
     return cachedData
   }
 
   try {
-    // 优先使用 localStorage 中的配置，如果没有则使用环境变量
-    let economicGistId = localStorage.getItem('economicGistId')
-    const envGistId = import.meta.env.VITE_GIST_ID || 'cdd0e8f0991321350c731d718ba807b5'
-    
-    if (!economicGistId) {
-      // 从环境变量获取 GIST_ID 作为后备
-      economicGistId = envGistId
-      console.log('🔧 使用环境变量中的 Gist ID:', economicGistId)
-    } else {
-      console.log('🔧 使用 localStorage 中的 Gist ID:', economicGistId)
-    }
-    
-    // 调试信息：显示所有可能的 Gist ID 来源
-    console.log('🔍 调试信息:', {
-      localStorage: localStorage.getItem('economicGistId'),
-      environment: envGistId,
-      final: economicGistId,
-      location: window.location.href
-    })
-    
-    if (!economicGistId) {
-      console.warn('未设置经济数据 Gist ID')
-      return null
-    }
+    const economicGistId = getEconomicGistId()
 
-    console.log('🌐 获取中国经济数据:', `https://api.github.com/gists/${economicGistId}`)
-    const response = await fetch(`https://api.github.com/gists/${economicGistId}`)
+    const gistUrl = `https://api.github.com/gists/${economicGistId}`
+    
+    const response = await fetch(gistUrl)
     if (!response.ok) {
       console.error('❌ Gist API 请求失败:', response.status, response.statusText)
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -75,18 +73,16 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
     ]
     
     let dataFile = null
-    let fileName = ''
     
     for (const name of possibleFileNames) {
       if (gist.files[name]) {
         dataFile = gist.files[name]
-        fileName = name
         break
       }
     }
     
     if (!dataFile) {
-      console.warn('❌ Gist 中未找到经济数据文件，可用文件:', Object.keys(gist.files))
+      console.warn('❌ Gist 中未找到经济数据文件')
       return null
     }
 
@@ -96,7 +92,6 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
     const chinaData = rawData.chinaEconomicData || rawData
     
     if (!chinaData || !chinaData.data) {
-      console.warn('⚠️ 中国经济数据结构不正确')
       return null
     }
     
@@ -114,7 +109,6 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
                    data.socialFinancing.length > 0 || data.usdCny.length > 0
     
     if (!hasData) {
-      console.warn('⚠️ 中国经济数据为空，不显示数据')
       return null
     }
     
@@ -122,50 +116,11 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
     cachedData = data
     cacheTimestamp = now
     
-    console.log('✅ 成功获取并缓存中国经济数据:', {
-      m2: data.m2.length,
-      dr007: data.dr007.length,
-      socialFinancing: data.socialFinancing.length,
-      usdCny: data.usdCny.length
-    })
-    
     return data
   } catch (error) {
     console.error('❌ 获取中国经济数据失败:', error)
     return null
   }
-}
-
-/**
- * 获取最新的 M2 货币供应量数据
- */
-export function getLatestM2(data: ChinaEconomicData): number | null {
-  if (!data.m2 || data.m2.length === 0) return null
-  return data.m2[data.m2.length - 1].value
-}
-
-/**
- * 获取最新的 DR007 利率数据
- */
-export function getLatestDR007(data: ChinaEconomicData): number | null {
-  if (!data.dr007 || data.dr007.length === 0) return null
-  return data.dr007[data.dr007.length - 1].value
-}
-
-/**
- * 获取最新的社会融资规模数据
- */
-export function getLatestSocialFinancing(data: ChinaEconomicData): number | null {
-  if (!data.socialFinancing || data.socialFinancing.length === 0) return null
-  return data.socialFinancing[data.socialFinancing.length - 1].value
-}
-
-/**
- * 获取最新的 USD/CNY 汇率数据
- */
-export function getLatestUsdCny(data: ChinaEconomicData): number | null {
-  if (!data.usdCny || data.usdCny.length === 0) return null
-  return data.usdCny[data.usdCny.length - 1].value
 }
 
 /**

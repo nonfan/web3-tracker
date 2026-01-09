@@ -334,6 +334,10 @@ export const useStore = create<AppState>()(
           if (data.projects && Array.isArray(data.projects)) {
             // 兼容旧数据：将 investment/profit 转换为 transactions
             const migratedProjects = data.projects.map((p: Project) => {
+              // 迁移旧状态：launched -> active (项目的"已发币"改为"进行中")
+              let status = p.status as string
+              if (status === 'launched') status = 'active'
+              
               if (!p.transactions) {
                 const transactions = []
                 if (p.investment && p.investment > 0) {
@@ -354,9 +358,9 @@ export const useStore = create<AppState>()(
                     createdAt: p.createdAt,
                   })
                 }
-                return { ...p, transactions }
+                return { ...p, status, transactions }
               }
-              return p
+              return { ...p, status }
             })
             
             // 兼容旧代币数据：确保 tags 和 status 字段存在，并迁移旧状态

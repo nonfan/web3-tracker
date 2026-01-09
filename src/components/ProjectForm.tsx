@@ -160,7 +160,7 @@ export function ProjectForm({ project, isToken = false, onSubmit, onCancel }: Pr
   const [blockchain, setBlockchain] = useState('')  // 区块链浏览器
   const [chain, setChain] = useState('')  // 所属链
   const [contractAddress, setContractAddress] = useState('')  // 合约地址
-  const [status, setStatus] = useState<ProjectStatus>('active')
+  const [status, setStatus] = useState<ProjectStatus>('research')
   const [priority, setPriority] = useState<Priority>('medium')
   const [tags, setTags] = useState<string[]>([])
   const [deadline, setDeadline] = useState('')
@@ -494,9 +494,9 @@ export function ProjectForm({ project, isToken = false, onSubmit, onCancel }: Pr
                   { value: 'completed', label: '已卖币', color: 'blue' },
                   { value: 'dead', label: '已归零', color: 'gray' },
                 ] : [
-                  { value: 'active', label: '进行中', color: 'emerald' },
+                  { value: 'research', label: '研究中', color: 'amber' },
+                  { value: 'active', label: '交互中', color: 'emerald' },
                   { value: 'completed', label: '已完成', color: 'blue' },
-                  { value: 'launched', label: '已发币', color: 'violet' },
                   { value: 'dead', label: '已凉', color: 'gray' },
                 ]).map((s) => (
                   <button
@@ -504,10 +504,11 @@ export function ProjectForm({ project, isToken = false, onSubmit, onCancel }: Pr
                     type="button"
                     onClick={() => setStatus(s.value as ProjectStatus)}
                     className={`h-full rounded-lg text-xs font-medium transition-all ${status === s.value
-                      ? s.color === 'emerald' ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/50'
-                        : s.color === 'blue' ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50'
-                          : s.color === 'violet' ? 'bg-violet-500/20 text-violet-400 ring-1 ring-violet-500/50'
-                            : 'bg-gray-500/20 text-gray-400 ring-1 ring-gray-500/50'
+                      ? s.color === 'amber' ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/50'
+                        : s.color === 'emerald' ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/50'
+                          : s.color === 'blue' ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50'
+                            : s.color === 'violet' ? 'bg-violet-500/20 text-violet-400 ring-1 ring-violet-500/50'
+                              : 'bg-gray-500/20 text-gray-400 ring-1 ring-gray-500/50'
                       : 'bg-[var(--input-bg)] text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-secondary)]'
                       }`}
                   >

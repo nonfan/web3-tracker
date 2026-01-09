@@ -52,11 +52,17 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
 
   // 根据类型动态设置状态配置
   const statusConfig = useMemo(() => ({
+    research: {
+      bg: 'bg-amber-500/20',
+      text: 'text-amber-400',
+      dot: 'bg-amber-400',
+      label: '研究中'
+    },
     active: {
       bg: 'bg-emerald-500/20',
       text: 'text-emerald-400',
       dot: 'bg-emerald-400',
-      label: isToken ? '研究中' : '进行中'
+      label: isToken ? '研究中' : '交互中'
     },
     completed: {
       bg: 'bg-blue-500/20',
@@ -1298,7 +1304,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
 
       {/* Status Quick Change */}
       <div className="flex gap-1 mt-4 pt-4 border-t border-[var(--border)]">
-        {(['active', 'launched', 'completed', 'dead'] as const).map((s) => {
+        {(isToken ? ['active', 'launched', 'completed', 'dead'] as const : ['research', 'active', 'completed', 'dead'] as const).map((s) => {
           const config = statusConfig[s]
           const isActive = project.status === s
           return (
@@ -1308,7 +1314,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
                 if (isToken) {
                   updateToken(project.id, { status: s })
                 } else {
-                  updateProject(project.id, { status: s })
+                  updateProject(project.id, { status: s as any })
                 }
               }}
               className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${isActive
@@ -1328,7 +1334,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
               if (isToken) {
                 updateToken(project.id, { status: willArchive ? 'archived' : 'active' })
               } else {
-                updateProject(project.id, { status: willArchive ? 'archived' : 'active' })
+                updateProject(project.id, { status: willArchive ? 'archived' : 'research' })
               }
               onArchive?.(willArchive)
             }}

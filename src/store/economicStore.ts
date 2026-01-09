@@ -104,8 +104,7 @@ export const useEconomicStore = create<EconomicState>()(
       // 设置选中的国家
       setSelectedCountry: (country: string) => {
         set({ selectedCountry: country })
-        // 切换国家时重新获取数据
-        get().refreshAllData()
+        // 不再自动刷新数据，由页面组件控制
       },
       
       // 获取联邦利率数据

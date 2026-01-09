@@ -34,12 +34,20 @@ export function BatchActions({ selectedIds, onClear }: Props) {
       <div className="h-6 w-px bg-[var(--border)]" />
       
       <div className="flex gap-1">
-        <Tooltip content="进行中" position="top">
+        <Tooltip content="研究中" position="top">
+          <button
+            onClick={() => handleStatusChange('research')}
+            className="p-2 hover:bg-amber-500/20 rounded-lg text-[var(--text-secondary)] hover:text-amber-400 transition-colors"
+          >
+            <CheckCircle className="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <Tooltip content="交互中" position="top">
           <button
             onClick={() => handleStatusChange('active')}
             className="p-2 hover:bg-emerald-500/20 rounded-lg text-[var(--text-secondary)] hover:text-emerald-400 transition-colors"
           >
-            <CheckCircle className="w-4 h-4" />
+            <Rocket className="w-4 h-4" />
           </button>
         </Tooltip>
         <Tooltip content="已完成" position="top">
@@ -48,14 +56,6 @@ export function BatchActions({ selectedIds, onClear }: Props) {
             className="p-2 hover:bg-blue-500/20 rounded-lg text-[var(--text-secondary)] hover:text-blue-400 transition-colors"
           >
             <XCircle className="w-4 h-4" />
-          </button>
-        </Tooltip>
-        <Tooltip content="已发币" position="top">
-          <button
-            onClick={() => handleStatusChange('launched')}
-            className="p-2 hover:bg-violet-500/20 rounded-lg text-[var(--text-secondary)] hover:text-violet-400 transition-colors"
-          >
-            <Rocket className="w-4 h-4" />
           </button>
         </Tooltip>
         <Tooltip content="已凉" position="top">

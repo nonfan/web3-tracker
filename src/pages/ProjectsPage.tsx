@@ -191,9 +191,9 @@ export function ProjectsPage() {
 
   const stats = {
     total: projects.filter(p => p.status !== 'archived').length,
+    research: projects.filter((p) => p.status === 'research').length,
     active: projects.filter((p) => p.status === 'active').length,
     completed: projects.filter((p) => p.status === 'completed').length,
-    launched: projects.filter((p) => p.status === 'launched').length,
     archived: projects.filter((p) => p.status === 'archived').length,
   }
 
@@ -224,7 +224,7 @@ export function ProjectsPage() {
       id: '',
       name: '',
       description: '',
-      status: 'active',
+      status: 'research',
       priority: template.defaultData.priority,
       tags: template.defaultData.tags,
       tasks: template.defaultData.tasks.map((title, i) => ({
@@ -247,8 +247,8 @@ export function ProjectsPage() {
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: '总项目', value: stats.total, color: 'slate', bgColor: 'bg-slate-500/10', borderColor: 'border-slate-500/20' },
-          { label: '进行中', value: stats.active, color: 'emerald', bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/20' },
-          { label: '已发币', value: stats.launched, color: 'violet', bgColor: 'bg-violet-500/10', borderColor: 'border-violet-500/20' },
+          { label: '研究中', value: stats.research, color: 'amber', bgColor: 'bg-amber-500/10', borderColor: 'border-amber-500/20' },
+          { label: '交互中', value: stats.active, color: 'emerald', bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/20' },
           { label: '已完成', value: stats.completed, color: 'blue', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/20' },
         ].map((stat) => (
           <div
@@ -258,6 +258,7 @@ export function ProjectsPage() {
             <div className="text-xs text-[var(--text-muted)] font-medium mb-1">{stat.label}</div>
             <div className={`text-3xl font-bold ${stat.color === 'slate' ? 'text-[var(--text-primary)]' :
               stat.color === 'emerald' ? 'text-emerald-400' :
+                stat.color === 'amber' ? 'text-amber-400' :
                 stat.color === 'blue' ? 'text-blue-400' : 'text-violet-400'
               }`}>
               {stat.value}
@@ -347,8 +348,8 @@ export function ProjectsPage() {
           <div className="flex gap-1 bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--border)]">
             {[
               { value: 'all', label: '全部' },
-              { value: 'active', label: '进行中' },
-              { value: 'launched', label: '已发币' },
+              { value: 'research', label: '研究中' },
+              { value: 'active', label: '交互中' },
               { value: 'completed', label: '已完成' },
               { value: 'dead', label: '已凉' },
             ].map((f) => (

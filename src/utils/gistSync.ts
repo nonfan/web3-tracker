@@ -196,14 +196,34 @@ export function clearGistConfig() {
 }
 
 // 查找所有 Web3Tracker 相关的 Gist（项目数据和经济数据）
+// 添加缓存避免重复请求
+let gistListCache: { data: GistInfo[], timestamp: number } | null = null
+const GIST_LIST_CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
+
 export async function findAllGists(token: string): Promise<GistInfo[]> {
+  // 检查缓存
+  if (gistListCache && (Date.now() - gistListCache.timestamp) < GIST_LIST_CACHE_DURATION) {
+    console.log('📋 使用缓存的 Gist 列表')
+    return gistListCache.data
+  }
+
   try {
     const response = await fetch('https://api.github.com/gists?per_page=100', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
-    if (!response.ok) return []
+    
+    if (response.status === 403) {
+      const errorData = await response.json().catch(() => ({}))
+      if (errorData.message?.includes('rate limit')) {
+        console.error('⚠️ GitHub API 速率限制，请稍后再试')
+        // 返回缓存数据（如果有的话）
+        return gistListCache?.data || []
+      }
+    }
+    
+    if (!response.ok) return gistListCache?.data || []
     
     const gists = await response.json()
     const results: GistInfo[] = []
@@ -237,9 +257,13 @@ export async function findAllGists(token: string): Promise<GistInfo[]> {
         }
       }
     }
+    
+    // 更新缓存
+    gistListCache = { data: results, timestamp: Date.now() }
+    
     return results
   } catch {
-    return []
+    return gistListCache?.data || []
   }
 }
 
