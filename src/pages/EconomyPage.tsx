@@ -50,9 +50,18 @@ export function EconomyPage() {
   useAutoRefresh()
   useVisibilityRefresh()
 
-  // 检查中国数据是否可用
-  const isChinaDataAvailable = chinaM2Data.length > 0 && chinaDR007Data.length > 0 && 
-                               chinaSocialFinancingData.length > 0 && chinaUsdCnyData.length > 0
+  // 检查中国数据是否可用（只要有任何一个数据源可用就显示）
+  const isChinaDataAvailable = chinaM2Data.length > 0 || chinaDR007Data.length > 0 || 
+                               chinaSocialFinancingData.length > 0 || chinaUsdCnyData.length > 0
+  
+  // 调试信息
+  console.log('🇨🇳 China data status:', {
+    m2: chinaM2Data.length,
+    dr007: chinaDR007Data.length,
+    socialFinancing: chinaSocialFinancingData.length,
+    usdCny: chinaUsdCnyData.length,
+    available: isChinaDataAvailable
+  })
   
   // 可用的国家列表
   const availableCountries = ['US'] // 美国数据总是可用

@@ -23,7 +23,14 @@ export interface ChinaEconomicData {
  */
 export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null> {
   try {
-    const economicGistId = localStorage.getItem('economicGistId')
+    // 优先使用 localStorage 中的配置，如果没有则使用环境变量
+    let economicGistId = localStorage.getItem('economicGistId')
+    if (!economicGistId) {
+      // 从环境变量获取 GIST_ID 作为后备
+      economicGistId = import.meta.env.VITE_GIST_ID || 'cdd0e8f0991321350c731d718ba807b5'
+      console.log('🔧 使用环境变量中的 Gist ID:', economicGistId)
+    }
+    
     if (!economicGistId) {
       console.warn('未设置经济数据 Gist ID')
       return null
