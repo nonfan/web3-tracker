@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { FedRateChart } from '../components/economy/FedRateChart'
 import { InflationChart } from '../components/economy/InflationChart'
 import { UnemploymentChart } from '../components/economy/UnemploymentChart'
+import { ChinaEconomicChart } from '../components/economy/ChinaEconomicChart'
 import { DataCard } from '../components/economy/DataCard'
 import { CountrySelector } from '../components/economy/CountrySelector'
 import { useEconomicStore } from '../store/economicStore'
@@ -225,6 +226,53 @@ export function EconomyPage() {
                 error={errors.unemployment}
                 countryName="美国"
                 countryCode="US"
+              />
+            )}
+          </>
+        ) : selectedCountry === 'CN' ? (
+          <>
+            {activeChart === 'interest-rate' && (
+              <ChinaEconomicChart 
+                data={chinaDR007Data}
+                loading={isLoading.chinaDR007}
+                error={errors.chinaDR007}
+                type="dr007"
+                title="DR007利率"
+                unit="%"
+                color="violet"
+              />
+            )}
+            {activeChart === 'inflation' && (
+              <ChinaEconomicChart 
+                data={chinaM2Data}
+                loading={isLoading.chinaM2}
+                error={errors.chinaM2}
+                type="m2"
+                title="M2货币供应量"
+                unit="万亿元"
+                color="amber"
+              />
+            )}
+            {activeChart === 'unemployment' && (
+              <ChinaEconomicChart 
+                data={chinaSocialFinancingData}
+                loading={isLoading.chinaSocialFinancing}
+                error={errors.chinaSocialFinancing}
+                type="socialFinancing"
+                title="社会融资规模"
+                unit="万亿元"
+                color="emerald"
+              />
+            )}
+            {activeChart === 'exchange-rate' && (
+              <ChinaEconomicChart 
+                data={chinaUsdCnyData}
+                loading={isLoading.chinaUsdCny}
+                error={errors.chinaUsdCny}
+                type="usdCny"
+                title="人民币汇率"
+                unit="CNY"
+                color="blue"
               />
             )}
           </>
