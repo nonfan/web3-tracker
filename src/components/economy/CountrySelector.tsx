@@ -62,29 +62,6 @@ export function CountrySelector({ selectedCountry, onCountryChange, availableCou
           </button>
         ))}
       </div>
-      
-      {/* 数据源说明 */}
-      <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-        <div className="flex items-center gap-2 text-blue-400 text-sm">
-          <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-          <span className="font-medium">数据来源</span>
-          <button
-            onClick={() => {
-              console.log('🔄 手动刷新数据')
-              window.location.reload()
-            }}
-            className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
-          >
-            刷新数据
-          </button>
-        </div>
-        <p className="text-xs text-[var(--text-muted)] mt-1">
-          {selectedCountry === 'US' 
-            ? '美国经济数据来源于美联储 FRED 数据库，通过 GitHub Actions 自动更新'
-            : '中国经济数据来源于央行、外汇交易中心等官方渠道，通过 GitHub Actions 自动更新'
-          }
-        </p>
-      </div>
     </div>
   )
 }
