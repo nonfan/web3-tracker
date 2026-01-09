@@ -214,7 +214,6 @@ export const useEconomicStore = create<EconomicState>()(
       
       // 获取中国经济数据
       fetchChinaData: async () => {
-        console.log('🇨🇳 开始获取中国经济数据...')
         set(state => ({ 
           isLoading: { 
             ...state.isLoading, 
@@ -235,86 +234,41 @@ export const useEconomicStore = create<EconomicState>()(
         try {
           console.log('🇨🇳 Fetching China economic data...')
           
-          // 并行获取所有中国数据
-          const [m2Data, dr007Data, socialFinancingData, usdCnyData] = await Promise.allSettled([
-            getM2MoneySupplyData(),
-            getDR007RateData(),
-            getSocialFinancingData(),
-            getUsdCnyRateData()
-          ])
+          // 直接获取数据而不是并行处理
+          const m2Data = await getM2MoneySupplyData()
+          const dr007Data = await getDR007RateData()
+          const socialFinancingData = await getSocialFinancingData()
+          const usdCnyData = await getUsdCnyRateData()
           
-          console.log('🇨🇳 中国数据获取结果:', {
-            m2: m2Data.status,
-            dr007: dr007Data.status,
-            socialFinancing: socialFinancingData.status,
-            usdCny: usdCnyData.status
+          // 更新状态
+          set(state => ({
+            chinaM2Data: m2Data,
+            chinaDR007Data: dr007Data,
+            chinaSocialFinancingData: socialFinancingData,
+            chinaUsdCnyData: usdCnyData,
+            lastUpdate: { 
+              ...state.lastUpdate, 
+              chinaM2: Date.now(),
+              chinaDR007: Date.now(),
+              chinaSocialFinancing: Date.now(),
+              chinaUsdCny: Date.now()
+            },
+            isLoading: { 
+              ...state.isLoading, 
+              chinaM2: false,
+              chinaDR007: false,
+              chinaSocialFinancing: false,
+              chinaUsdCny: false
+            }
+          }))
+          
+          console.log('✅ China economic data updated:', {
+            m2: m2Data.length,
+            dr007: dr007Data.length,
+            socialFinancing: socialFinancingData.length,
+            usdCny: usdCnyData.length
           })
           
-          // 处理M2数据
-          if (m2Data.status === 'fulfilled') {
-            set(state => ({
-              chinaM2Data: m2Data.value,
-              lastUpdate: { ...state.lastUpdate, chinaM2: Date.now() },
-              isLoading: { ...state.isLoading, chinaM2: false }
-            }))
-            console.log('📊 China M2 data updated:', m2Data.value.length, 'points')
-          } else {
-            console.error('❌ M2 data failed:', m2Data.reason)
-            set(state => ({
-              isLoading: { ...state.isLoading, chinaM2: false },
-              errors: { ...state.errors, chinaM2: 'Failed to fetch M2 data' }
-            }))
-          }
-          
-          // 处理DR007数据
-          if (dr007Data.status === 'fulfilled') {
-            set(state => ({
-              chinaDR007Data: dr007Data.value,
-              lastUpdate: { ...state.lastUpdate, chinaDR007: Date.now() },
-              isLoading: { ...state.isLoading, chinaDR007: false }
-            }))
-            console.log('📊 China DR007 data updated:', dr007Data.value.length, 'points')
-          } else {
-            console.error('❌ DR007 data failed:', dr007Data.reason)
-            set(state => ({
-              isLoading: { ...state.isLoading, chinaDR007: false },
-              errors: { ...state.errors, chinaDR007: 'Failed to fetch DR007 data' }
-            }))
-          }
-          
-          // 处理社会融资规模数据
-          if (socialFinancingData.status === 'fulfilled') {
-            set(state => ({
-              chinaSocialFinancingData: socialFinancingData.value,
-              lastUpdate: { ...state.lastUpdate, chinaSocialFinancing: Date.now() },
-              isLoading: { ...state.isLoading, chinaSocialFinancing: false }
-            }))
-            console.log('📊 China social financing data updated:', socialFinancingData.value.length, 'points')
-          } else {
-            console.error('❌ Social financing data failed:', socialFinancingData.reason)
-            set(state => ({
-              isLoading: { ...state.isLoading, chinaSocialFinancing: false },
-              errors: { ...state.errors, chinaSocialFinancing: 'Failed to fetch social financing data' }
-            }))
-          }
-          
-          // 处理USD/CNY汇率数据
-          if (usdCnyData.status === 'fulfilled') {
-            set(state => ({
-              chinaUsdCnyData: usdCnyData.value,
-              lastUpdate: { ...state.lastUpdate, chinaUsdCny: Date.now() },
-              isLoading: { ...state.isLoading, chinaUsdCny: false }
-            }))
-            console.log('📊 China USD/CNY data updated:', usdCnyData.value.length, 'points')
-          } else {
-            console.error('❌ USD/CNY data failed:', usdCnyData.reason)
-            set(state => ({
-              isLoading: { ...state.isLoading, chinaUsdCny: false },
-              errors: { ...state.errors, chinaUsdCny: 'Failed to fetch USD/CNY data' }
-            }))
-          }
-          
-          console.log('✅ China economic data fetch completed')
         } catch (error) {
           console.error('❌ Failed to fetch China economic data:', error)
           set(state => ({
