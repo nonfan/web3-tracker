@@ -27,7 +27,13 @@ export function ChinaEconomicChart({
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 border-${color}-500 mx-auto mb-4`}></div>
+          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4 ${
+            color === 'violet' ? 'border-violet-500' :
+            color === 'amber' ? 'border-amber-500' :
+            color === 'emerald' ? 'border-emerald-500' :
+            color === 'blue' ? 'border-blue-500' :
+            'border-blue-500'
+          }`}></div>
           <p className="text-[var(--text-muted)]">加载数据中...</p>
         </div>
       </div>
@@ -62,8 +68,20 @@ export function ChinaEconomicChart({
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center max-w-md">
-          <div className={`w-16 h-16 bg-${color}-500/10 rounded-full flex items-center justify-center mx-auto mb-4`}>
-            <AlertCircle className={`w-8 h-8 text-${color}-400`} />
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+            color === 'violet' ? 'bg-violet-500/10' :
+            color === 'amber' ? 'bg-amber-500/10' :
+            color === 'emerald' ? 'bg-emerald-500/10' :
+            color === 'blue' ? 'bg-blue-500/10' :
+            'bg-blue-500/10'
+          }`}>
+            <AlertCircle className={`w-8 h-8 ${
+              color === 'violet' ? 'text-violet-400' :
+              color === 'amber' ? 'text-amber-400' :
+              color === 'emerald' ? 'text-emerald-400' :
+              color === 'blue' ? 'text-blue-400' :
+              'text-blue-400'
+            }`} />
           </div>
           <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">暂无数据</h3>
           <p className="text-sm text-[var(--text-secondary)] mb-4">
@@ -123,9 +141,21 @@ export function ChinaEconomicChart({
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="bg-[var(--bg-secondary)] rounded-xl p-4 border border-[var(--border)]">
           <div className="flex items-center gap-2 mb-2">
-            <div className={`w-8 h-8 rounded-lg bg-${color}-500/20 flex items-center justify-center`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+              color === 'violet' ? 'bg-violet-500/20' :
+              color === 'amber' ? 'bg-amber-500/20' :
+              color === 'emerald' ? 'bg-emerald-500/20' :
+              color === 'blue' ? 'bg-blue-500/20' :
+              'bg-blue-500/20'
+            }`}>
               {change > 0 ? (
-                <TrendingUp className={`w-4 h-4 text-${color}-400`} />
+                <TrendingUp className={`w-4 h-4 ${
+                  color === 'violet' ? 'text-violet-400' :
+                  color === 'amber' ? 'text-amber-400' :
+                  color === 'emerald' ? 'text-emerald-400' :
+                  color === 'blue' ? 'text-blue-400' :
+                  'text-blue-400'
+                }`} />
               ) : change < 0 ? (
                 <TrendingDown className="w-4 h-4 text-emerald-400" />
               ) : (
@@ -134,7 +164,13 @@ export function ChinaEconomicChart({
             </div>
             <div className="text-xs text-[var(--text-muted)]">当前值</div>
           </div>
-          <div className={`text-2xl font-bold text-${color}-400`}>
+          <div className={`text-2xl font-bold ${
+            color === 'violet' ? 'text-violet-400' :
+            color === 'amber' ? 'text-amber-400' :
+            color === 'emerald' ? 'text-emerald-400' :
+            color === 'blue' ? 'text-blue-400' :
+            'text-blue-400'
+          }`}>
             {currentValue.toFixed(type === 'usdCny' ? 4 : 2)}{unit}
           </div>
           <div className="text-xs text-[var(--text-muted)] mt-1">
@@ -165,8 +201,20 @@ export function ChinaEconomicChart({
           <ComposedChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <defs>
               <linearGradient id={`${type}Gradient`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={`var(--${color}-500)`} stopOpacity={0.3} />
-                <stop offset="95%" stopColor={`var(--${color}-500)`} stopOpacity={0.05} />
+                <stop offset="5%" stopColor={
+                  color === 'violet' ? '#8b5cf6' :
+                  color === 'amber' ? '#f59e0b' :
+                  color === 'emerald' ? '#10b981' :
+                  color === 'blue' ? '#3b82f6' :
+                  '#3b82f6'
+                } stopOpacity={0.3} />
+                <stop offset="95%" stopColor={
+                  color === 'violet' ? '#8b5cf6' :
+                  color === 'amber' ? '#f59e0b' :
+                  color === 'emerald' ? '#10b981' :
+                  color === 'blue' ? '#3b82f6' :
+                  '#3b82f6'
+                } stopOpacity={0.05} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
@@ -204,7 +252,13 @@ export function ChinaEconomicChart({
                       <div className="space-y-1 text-xs">
                         <div className="flex justify-between gap-4">
                           <span className="text-[var(--text-muted)]">{title}:</span>
-                          <span className={`font-mono font-semibold text-${color}-400`}>
+                          <span className={`font-mono font-semibold ${
+                            color === 'violet' ? 'text-violet-400' :
+                            color === 'amber' ? 'text-amber-400' :
+                            color === 'emerald' ? 'text-emerald-400' :
+                            color === 'blue' ? 'text-blue-400' :
+                            'text-blue-400'
+                          }`}>
                             {data.value.toFixed(type === 'usdCny' ? 4 : 2)}{unit}
                           </span>
                         </div>
@@ -219,7 +273,21 @@ export function ChinaEconomicChart({
               wrapperStyle={{ paddingTop: '20px' }}
               iconType="line"
             />
-            <ReferenceLine y={currentValue} stroke={`var(--${color}-500)`} strokeDasharray="3 3" label={{ value: '当前', fill: `var(--${color}-500)`, fontSize: 11 }} />
+            <ReferenceLine y={currentValue} stroke={
+              color === 'violet' ? '#8b5cf6' :
+              color === 'amber' ? '#f59e0b' :
+              color === 'emerald' ? '#10b981' :
+              color === 'blue' ? '#3b82f6' :
+              '#3b82f6'
+            } strokeDasharray="3 3" label={{ 
+              value: '当前', 
+              fill: color === 'violet' ? '#8b5cf6' :
+                    color === 'amber' ? '#f59e0b' :
+                    color === 'emerald' ? '#10b981' :
+                    color === 'blue' ? '#3b82f6' :
+                    '#3b82f6', 
+              fontSize: 11 
+            }} />
 
             {/* 区域图 */}
             <Area
@@ -233,10 +301,29 @@ export function ChinaEconomicChart({
             <Line
               type="monotone"
               dataKey="value"
-              stroke={`var(--${color}-500)`}
+              stroke={
+                color === 'violet' ? '#8b5cf6' :
+                color === 'amber' ? '#f59e0b' :
+                color === 'emerald' ? '#10b981' :
+                color === 'blue' ? '#3b82f6' :
+                '#3b82f6'
+              }
               strokeWidth={3}
-              dot={{ r: 3, fill: `var(--${color}-500)` }}
-              activeDot={{ r: 8, fill: `var(--${color}-500)`, stroke: '#fff', strokeWidth: 2 }}
+              dot={{ r: 3, fill: color === 'violet' ? '#8b5cf6' :
+                                 color === 'amber' ? '#f59e0b' :
+                                 color === 'emerald' ? '#10b981' :
+                                 color === 'blue' ? '#3b82f6' :
+                                 '#3b82f6' }}
+              activeDot={{ 
+                r: 8, 
+                fill: color === 'violet' ? '#8b5cf6' :
+                      color === 'amber' ? '#f59e0b' :
+                      color === 'emerald' ? '#10b981' :
+                      color === 'blue' ? '#3b82f6' :
+                      '#3b82f6', 
+                stroke: '#fff', 
+                strokeWidth: 2 
+              }}
               name={title}
             />
           </ComposedChart>
