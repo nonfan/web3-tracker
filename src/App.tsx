@@ -69,7 +69,7 @@ function App() {
   return (
     <div className={`min-h-screen transition-colors ${theme === 'dark' ? 'bg-gradient-to-br from-[#0a0a0f] via-[#0f0f18] to-[#0a0a0f]' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'}`}>
       {/* Full Width Header */}
-      <header className="bg-[var(--card-bg)] border-b border-[var(--border)] p-4 md:p-6">
+      <header className="sticky top-0 z-50 bg-[var(--card-bg)] border-b border-[var(--border)] p-4 md:p-6 backdrop-blur-sm bg-opacity-95">
           <div className="flex items-center justify-between">
             {/* Left Section - Logo */}
             <div className="flex items-center gap-4 min-w-0">
