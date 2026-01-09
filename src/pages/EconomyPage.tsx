@@ -124,7 +124,7 @@ export function EconomyPage() {
           loading={selectedCountry === 'US' ? isLoading.fedRate : isLoading.chinaDR007}
           error={selectedCountry === 'US' ? errors.fedRate : errors.chinaDR007}
           color="violet"
-          icon="fed-rate"
+          icon={selectedCountry === 'US' ? "fed-rate" : "dr007-rate"}
         />
         
         <DataCard
@@ -135,7 +135,7 @@ export function EconomyPage() {
           loading={selectedCountry === 'US' ? isLoading.inflation : isLoading.chinaM2}
           error={selectedCountry === 'US' ? errors.inflation : errors.chinaM2}
           color="amber"
-          icon="inflation"
+          icon={selectedCountry === 'US' ? "inflation" : "m2-money"}
         />
         
         <DataCard
@@ -146,7 +146,7 @@ export function EconomyPage() {
           loading={selectedCountry === 'US' ? isLoading.unemployment : isLoading.chinaSocialFinancing}
           error={selectedCountry === 'US' ? errors.unemployment : errors.chinaSocialFinancing}
           color="emerald"
-          icon="unemployment"
+          icon={selectedCountry === 'US' ? "unemployment" : "social-financing"}
         />
         
         {/* 中国专用：人民币汇率 */}
