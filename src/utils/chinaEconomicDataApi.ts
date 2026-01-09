@@ -3,6 +3,11 @@
  * 从 GitHub Gist 获取中国经济数据
  */
 
+export interface ChinaEconomicDataPoint {
+  date: string
+  value: number
+}
+
 export interface ChinaEconomicData {
   m2: Array<{ date: string; value: number }>
   dr007: Array<{ date: string; value: number }>
@@ -93,4 +98,40 @@ export function getLatestSocialFinancing(data: ChinaEconomicData): number | null
 export function getLatestUsdCny(data: ChinaEconomicData): number | null {
   if (!data.usdCny || data.usdCny.length === 0) return null
   return data.usdCny[data.usdCny.length - 1].value
+}
+
+/**
+ * 获取 M2 货币供应量数据
+ */
+export async function getM2MoneySupplyData(): Promise<ChinaEconomicDataPoint[]> {
+  const data = await fetchChinaEconomicData()
+  if (!data || !data.m2) return []
+  return data.m2.map(item => ({ date: item.date, value: item.value }))
+}
+
+/**
+ * 获取 DR007 利率数据
+ */
+export async function getDR007RateData(): Promise<ChinaEconomicDataPoint[]> {
+  const data = await fetchChinaEconomicData()
+  if (!data || !data.dr007) return []
+  return data.dr007.map(item => ({ date: item.date, value: item.value }))
+}
+
+/**
+ * 获取社会融资规模数据
+ */
+export async function getSocialFinancingData(): Promise<ChinaEconomicDataPoint[]> {
+  const data = await fetchChinaEconomicData()
+  if (!data || !data.socialFinancing) return []
+  return data.socialFinancing.map(item => ({ date: item.date, value: item.value }))
+}
+
+/**
+ * 获取 USD/CNY 汇率数据
+ */
+export async function getUsdCnyRateData(): Promise<ChinaEconomicDataPoint[]> {
+  const data = await fetchChinaEconomicData()
+  if (!data || !data.usdCny) return []
+  return data.usdCny.map(item => ({ date: item.date, value: item.value }))
 }
