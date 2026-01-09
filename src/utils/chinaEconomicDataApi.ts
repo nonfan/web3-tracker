@@ -16,26 +16,22 @@ export interface ChinaEconomicData {
   lastUpdated: string
 }
 
-// Gist 中实际的数据结构
-export interface GistChinaEconomicData {
-  lastUpdate: string
-  country: string
-  name: string
-  currency: string
-  data: {
-    m2MoneySupply: Array<{ date: string; value: number }>
-    dr007Rate: Array<{ date: string; value: number }>
-    socialFinancing: Array<{ date: string; value: number }>
-    usdCnyRate: Array<{ date: string; value: number }>
-  }
-}
+// 缓存数据
+let cachedData: ChinaEconomicData | null = null
+let cacheTimestamp = 0
+const CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
 
 /**
  * 从 Gist 获取中国经济数据
- * 
- * ⚠️ 注意：当前数据为模拟数据，非真实经济指标
  */
 export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null> {
+  // 检查缓存
+  const now = Date.now()
+  if (cachedData && (now - cacheTimestamp) < CACHE_DURATION) {
+    console.log('🔄 使用缓存的中国经济数据')
+    return cachedData
+  }
+
   try {
     // 优先使用 localStorage 中的配置，如果没有则使用环境变量
     let economicGistId = localStorage.getItem('economicGistId')
@@ -52,7 +48,7 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
       return null
     }
 
-    console.log('🌐 正在获取 Gist 数据:', `https://api.github.com/gists/${economicGistId}`)
+    console.log('🌐 获取中国经济数据:', `https://api.github.com/gists/${economicGistId}`)
     const response = await fetch(`https://api.github.com/gists/${economicGistId}`)
     if (!response.ok) {
       console.error('❌ Gist API 请求失败:', response.status, response.statusText)
@@ -60,9 +56,8 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
     }
 
     const gist = await response.json()
-    console.log('📁 Gist 文件列表:', Object.keys(gist.files))
     
-    // 尝试多个可能的文件名
+    // 查找经济数据文件
     const possibleFileNames = [
       'economic-data.json',        // 主要的经济数据文件
       'china-economic-data.json',  // 中国专用数据文件
@@ -85,19 +80,15 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
       return null
     }
 
-    console.log('📄 使用文件:', fileName)
     const rawData = JSON.parse(dataFile.content)
-    console.log('🇨🇳 原始数据结构:', Object.keys(rawData))
     
     // 检查是否有 chinaEconomicData 字段
     const chinaData = rawData.chinaEconomicData || rawData
     
     if (!chinaData || !chinaData.data) {
-      console.warn('⚠️ 中国经济数据结构不正确，数据结构:', chinaData)
+      console.warn('⚠️ 中国经济数据结构不正确')
       return null
     }
-    
-    console.log('🇨🇳 中国数据字段:', Object.keys(chinaData.data))
     
     // 转换数据结构以匹配我们的接口
     const data: ChinaEconomicData = {
@@ -117,7 +108,11 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
       return null
     }
     
-    console.log('✅ 成功获取中国经济数据:', {
+    // 缓存数据
+    cachedData = data
+    cacheTimestamp = now
+    
+    console.log('✅ 成功获取并缓存中国经济数据:', {
       m2: data.m2.length,
       dr007: data.dr007.length,
       socialFinancing: data.socialFinancing.length,
