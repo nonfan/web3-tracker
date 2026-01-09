@@ -35,13 +35,23 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
   try {
     // 优先使用 localStorage 中的配置，如果没有则使用环境变量
     let economicGistId = localStorage.getItem('economicGistId')
+    const envGistId = import.meta.env.VITE_GIST_ID || 'cdd0e8f0991321350c731d718ba807b5'
+    
     if (!economicGistId) {
       // 从环境变量获取 GIST_ID 作为后备
-      economicGistId = import.meta.env.VITE_GIST_ID || 'cdd0e8f0991321350c731d718ba807b5'
+      economicGistId = envGistId
       console.log('🔧 使用环境变量中的 Gist ID:', economicGistId)
     } else {
       console.log('🔧 使用 localStorage 中的 Gist ID:', economicGistId)
     }
+    
+    // 调试信息：显示所有可能的 Gist ID 来源
+    console.log('🔍 调试信息:', {
+      localStorage: localStorage.getItem('economicGistId'),
+      environment: envGistId,
+      final: economicGistId,
+      location: window.location.href
+    })
     
     if (!economicGistId) {
       console.warn('未设置经济数据 Gist ID')
