@@ -39,10 +39,21 @@ export async function fetchChinaEconomicData(): Promise<ChinaEconomicData | null
 
     const data = JSON.parse(chinaDataFile.content)
     
-    // 检查是否为模拟数据并发出警告
-    if (data.dataSource === 'MOCK_DATA') {
-      console.warn('🚨 警告：当前显示的中国经济数据为模拟数据，非真实经济指标！')
-      console.warn('📋 需要接入真实数据源：央行、外汇管理局等官方渠道')
+    // 检查数据源类型和数据完整性
+    if (data.dataSource === 'REAL_API') {
+      // 验证数据完整性
+      if (!data.m2 || !data.dr007 || !data.socialFinancing || !data.usdCny ||
+          data.m2.length === 0 || data.dr007.length === 0 || 
+          data.socialFinancing.length === 0 || data.usdCny.length === 0) {
+        console.warn('⚠️ 中国经济数据不完整，不显示数据')
+        return null
+      }
+      
+      console.log('✅ 使用真实中国经济数据')
+      console.log('📊 数据来源:', data.sources)
+    } else {
+      console.warn('⚠️ 中国经济数据源未知，不显示数据')
+      return null
     }
     
     return data

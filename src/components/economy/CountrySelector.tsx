@@ -3,14 +3,20 @@ import { Globe } from 'lucide-react'
 interface CountrySelectorProps {
   selectedCountry: string
   onCountryChange: (country: string) => void
+  availableCountries?: string[] // 新增：可用的国家列表
 }
 
-export function CountrySelector({ selectedCountry, onCountryChange }: CountrySelectorProps) {
-  // 支持美国和中国数据
-  const supportedCountries = [
+export function CountrySelector({ selectedCountry, onCountryChange, availableCountries = ['US'] }: CountrySelectorProps) {
+  // 所有支持的国家
+  const allCountries = [
     { code: 'US', name: '美国', flag: '🇺🇸', currency: 'USD' },
     { code: 'CN', name: '中国', flag: '🇨🇳', currency: 'CNY' }
   ]
+  
+  // 只显示有数据的国家
+  const supportedCountries = allCountries.filter(country => 
+    availableCountries.includes(country.code)
+  )
   
   const currentCountry = supportedCountries.find(c => c.code === selectedCountry) || supportedCountries[0]
   

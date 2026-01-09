@@ -49,6 +49,23 @@ export function EconomyPage() {
   // 自动刷新数据
   useAutoRefresh()
   useVisibilityRefresh()
+
+  // 检查中国数据是否可用
+  const isChinaDataAvailable = chinaM2Data.length > 0 && chinaDR007Data.length > 0 && 
+                               chinaSocialFinancingData.length > 0 && chinaUsdCnyData.length > 0
+  
+  // 可用的国家列表
+  const availableCountries = ['US'] // 美国数据总是可用
+  if (isChinaDataAvailable) {
+    availableCountries.push('CN')
+  }
+  
+  // 如果当前选择的国家不可用，切换到美国
+  useEffect(() => {
+    if (selectedCountry === 'CN' && !isChinaDataAvailable) {
+      setSelectedCountry('US')
+    }
+  }, [selectedCountry, isChinaDataAvailable, setSelectedCountry])
   
   // 页面加载时确保数据已加载
   useEffect(() => {
@@ -85,6 +102,7 @@ export function EconomyPage() {
       <CountrySelector 
         selectedCountry={selectedCountry}
         onCountryChange={setSelectedCountry}
+        availableCountries={availableCountries}
       />
 
       {/* Stats Overview - 使用统一数据源 */}

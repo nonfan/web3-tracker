@@ -19,14 +19,17 @@ jobs:
       with:
         node-version: '18'
         
+    - name: Install dependencies
+      run: npm install node-fetch
+        
     - name: Update China Economic Data
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ECONOMIC_GIST_ID: ${{ secrets.ECONOMIC_GIST_ID }}
       run: |
         echo "更新中国经济数据..."
-        echo "注意：当前使用模拟数据，需要接入真实数据源"
-        node scripts/update-china-economic-data.cjs
+        echo "使用真实 API 数据源"
+        node scripts/update-china-economic-data.js
         
     - name: Log completion
       run: |
