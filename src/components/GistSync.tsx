@@ -110,7 +110,7 @@ function GistDropdown({ label, value, options, onChange, formatDate, type }: Gis
       {isOpen && (
         <div 
           ref={menuRef}
-          className="absolute top-full left-0 right-0 mt-1 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl shadow-xl overflow-hidden z-50 max-h-60 overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-1 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl shadow-xl overflow-hidden z-[60] max-h-60 overflow-y-auto"
         >
           <button
             type="button"
@@ -456,7 +456,7 @@ export function GistSync() {
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-md border border-[var(--border-hover)] shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold flex items-center gap-2 text-[var(--text-primary)]">
@@ -602,7 +602,7 @@ export function GistSync() {
 
       {/* Conflict Modal */}
       {showConflict && conflictDiff && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-lg border border-[var(--border-hover)] shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold flex items-center gap-2 text-amber-400">
@@ -726,7 +726,7 @@ export function GistSync() {
 
       {/* Tech Documentation Modal */}
       {showTechDocs && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-[var(--card-bg)] rounded-2xl p-6 w-full max-w-4xl border border-[var(--border-hover)] shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold flex items-center gap-2 text-[var(--text-primary)]">
