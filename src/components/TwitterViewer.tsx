@@ -13,43 +13,64 @@ export function TwitterViewer({ isOpen, onClose, username }: TwitterViewerProps)
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && username) {
       setLoading(true)
       setError(false)
       
-      // 加载 Twitter 嵌入脚本
-      const script = document.createElement('script')
-      script.src = 'https://platform.twitter.com/widgets.js'
-      script.async = true
-      script.onload = () => {
-        // 等待 Twitter widgets 加载完成
-        setTimeout(() => {
-          if ((window as any).twttr?.widgets) {
-            (window as any).twttr.widgets.load()
-          }
-          setLoading(false)
-        }, 1000)
+      // 清理之前的 widget
+      const container = document.getElementById('twitter-timeline-container')
+      if (container) {
+        container.innerHTML = ''
       }
-      script.onerror = () => {
-        setError(true)
-        setLoading(false)
-      }
-      document.body.appendChild(script)
       
-      return () => {
-        // 清理脚本
-        const existingScript = document.querySelector('script[src="https://platform.twitter.com/widgets.js"]')
-        if (existingScript) {
-          existingScript.remove()
+      // 加载 Twitter 嵌入脚本
+      const loadTwitterWidget = () => {
+        if ((window as any).twttr?.widgets) {
+          (window as any).twttr.widgets.createTimeline(
+            {
+              sourceType: 'profile',
+              screenName: username
+            },
+            document.getElementById('twitter-timeline-container'),
+            {
+              theme: 'dark',
+              chrome: 'noheader nofooter noborders transparent',
+              tweetLimit: 5,
+              width: '100%',
+              height: 500,
+              dnt: true
+            }
+          ).then(() => {
+            setLoading(false)
+          }).catch(() => {
+            setError(true)
+            setLoading(false)
+          })
         }
+      }
+      
+      // 检查脚本是否已加载
+      if ((window as any).twttr?.widgets) {
+        loadTwitterWidget()
+      } else {
+        const script = document.createElement('script')
+        script.src = 'https://platform.twitter.com/widgets.js'
+        script.async = true
+        script.onload = () => {
+          setTimeout(loadTwitterWidget, 500)
+        }
+        script.onerror = () => {
+          setError(true)
+          setLoading(false)
+        }
+        document.body.appendChild(script)
       }
     }
   }, [isOpen, username])
 
-  if (!isOpen) return null
+  if (!isOpen || !username) return null
 
-  // Twitter 时间线嵌入 URL
-  const timelineUrl = `https://twitter.com/${username}`
+  const timelineUrl = `https://x.com/${username}`
 
   return createPortal(
     <div 
@@ -57,11 +78,11 @@ export function TwitterViewer({ isOpen, onClose, username }: TwitterViewerProps)
       onClick={onClose}
     >
       <div 
-        className="bg-[var(--card-bg)] rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col border border-[var(--border-hover)] shadow-2xl overflow-hidden"
+        className="bg-[#15202b] rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col border border-[#38444d] shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
+        <div className="flex items-center justify-between p-4 border-b border-[#38444d]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
               <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -69,8 +90,8 @@ export function TwitterViewer({ isOpen, onClose, username }: TwitterViewerProps)
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">@{username}</h2>
-              <p className="text-xs text-[var(--text-muted)]">最新推文</p>
+              <h2 className="text-lg font-semibold text-white">@{username}</h2>
+              <p className="text-xs text-gray-500">最新推文</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -78,14 +99,14 @@ export function TwitterViewer({ isOpen, onClose, username }: TwitterViewerProps)
               href={timelineUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 hover:bg-[var(--input-bg)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
               title="在 X 中打开"
             >
               <ExternalLink className="w-5 h-5" />
             </a>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-[var(--input-bg)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -93,52 +114,49 @@ export function TwitterViewer({ isOpen, onClose, username }: TwitterViewerProps)
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden bg-[#15202b]">
           {loading && (
             <div className="flex flex-col items-center justify-center h-64 gap-3">
-              <RefreshCw className="w-8 h-8 text-violet-400 animate-spin" />
-              <p className="text-[var(--text-muted)]">加载推文中...</p>
+              <RefreshCw className="w-8 h-8 text-[#1d9bf0] animate-spin" />
+              <p className="text-gray-400">加载推文中...</p>
             </div>
           )}
           
           {error && (
             <div className="flex flex-col items-center justify-center h-64 gap-3">
               <AlertCircle className="w-8 h-8 text-red-400" />
-              <p className="text-[var(--text-muted)]">加载失败</p>
+              <p className="text-gray-400">加载失败</p>
               <a
                 href={timelineUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-violet-400 hover:text-violet-300 text-sm"
+                className="text-[#1d9bf0] hover:text-[#1a8cd8] text-sm"
               >
                 在 X 中查看 →
               </a>
             </div>
           )}
           
-          {/* Twitter 嵌入时间线 */}
-          <div className={`h-[500px] overflow-y-auto ${loading ? 'hidden' : ''}`}>
-            <a
-              className="twitter-timeline"
-              data-theme="dark"
-              data-chrome="noheader nofooter noborders transparent"
-              data-tweet-limit="5"
-              href={`https://twitter.com/${username}?ref_src=twsrc%5Etfw`}
-            >
-              加载 @{username} 的推文
-            </a>
-          </div>
+          {/* Twitter 嵌入时间线容器 */}
+          <div 
+            id="twitter-timeline-container"
+            className={`h-[500px] overflow-y-auto ${loading ? 'hidden' : ''}`}
+            style={{ 
+              colorScheme: 'dark',
+              backgroundColor: '#15202b'
+            }}
+          />
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-[var(--border)] bg-[var(--bg-secondary)]">
-          <p className="text-xs text-[var(--text-muted)] text-center">
+        <div className="p-3 border-t border-[#38444d] bg-[#192734]">
+          <p className="text-xs text-gray-500 text-center">
             由 X (Twitter) 提供 · 
             <a 
               href={timelineUrl} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-violet-400 hover:text-violet-300 ml-1"
+              className="text-[#1d9bf0] hover:text-[#1a8cd8] ml-1"
             >
               查看完整时间线
             </a>
