@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import type { Project, TransactionType } from '../types'
 import { useStore } from '../store/useStore'
-import { Pencil, Trash2, Globe, MessageCircle, Plus, X, Check, Clock, Flag, DollarSign, TrendingUp, List, Archive, ArchiveRestore, RefreshCw, Settings } from 'lucide-react'
+import { Pencil, Trash2, Globe, MessageCircle, Plus, X, Check, Clock, Flag, DollarSign, TrendingUp, List, Archive, ArchiveRestore, RefreshCw, Settings, ExternalLink, MessageSquare } from 'lucide-react'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Favicon } from './Favicon'
 import { Tooltip } from './Tooltip'
+import { ContextMenu } from './ContextMenu'
 import { TokenPriceChart } from './TokenPriceChart'
 import { TokenPriceImporter } from './TokenPriceImporter'
 import { getTokenPriceHistory, getTokenInfo } from '../utils/coinGeckoApi'
@@ -1060,16 +1061,39 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
           </a>
         )}
         {project.twitter && (
-          <a
-            href={project.twitter}
-            target="_blank"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--input-bg)] hover:bg-[var(--bg-tertiary)] rounded-lg text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          <ContextMenu
+            items={[
+              {
+                label: '打开主页',
+                icon: <ExternalLink className="w-4 h-4" />,
+                onClick: () => window.open(project.twitter, '_blank')
+              },
+              {
+                label: '查看推文',
+                icon: <MessageSquare className="w-4 h-4" />,
+                onClick: () => {
+                  // 从 twitter URL 提取用户名
+                  const match = project.twitter?.match(/(?:twitter\.com|x\.com)\/([^/?]+)/)
+                  const username = match ? match[1] : ''
+                  if (username) {
+                    window.open(`https://x.com/${username}`, '_blank')
+                  }
+                }
+              }
+            ]}
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-            </svg>
-            Twitter
-          </a>
+            <a
+              href={project.twitter}
+              target="_blank"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--input-bg)] hover:bg-[var(--bg-tertiary)] rounded-lg text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              Twitter
+            </a>
+          </ContextMenu>
         )}
         {/* 代币显示区块浏览器，项目显示 Discord */}
         {isToken && 'blockchain' in project && (project as any).blockchain ? (
