@@ -420,7 +420,7 @@ export function ProjectsPage() {
             items={filteredProjects.map(p => p.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+            <div className="columns-1 sm:columns-2 md:columns-3 gap-4 space-y-4">
               {filteredProjects.map((project) => (
                 <SortableCard
                   key={project.id}
