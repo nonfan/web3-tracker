@@ -120,6 +120,8 @@ export interface AppState {
   reorderTokens: (newOrder: string[]) => void  // 重新排序代币
   addTokenInvestment: (tokenId: string, investment: Omit<TokenInvestment, 'id'>) => void
   addTokenPrice: (tokenId: string, price: TokenPricePoint) => void
+  addTokenTransaction: (tokenId: string, type: TransactionType, amount: number, note?: string) => void
+  deleteTokenTransaction: (tokenId: string, transactionId: string) => void
   exportData: () => string
   importData: (json: string) => boolean
 }
