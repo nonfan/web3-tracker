@@ -6,6 +6,7 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { Favicon } from './Favicon'
 import { Tooltip } from './Tooltip'
 import { ContextMenu } from './ContextMenu'
+import { TwitterViewer } from './TwitterViewer'
 import { TokenPriceChart } from './TokenPriceChart'
 import { TokenPriceImporter } from './TokenPriceImporter'
 import { getTokenPriceHistory, getTokenInfo } from '../utils/coinGeckoApi'
@@ -94,6 +95,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
   const [showTasks, setShowTasks] = useState(false)
   const [showPriceChart, setShowPriceChart] = useState(false)
   const [showPriceImporter, setShowPriceImporter] = useState(false)
+  const [showTwitterViewer, setShowTwitterViewer] = useState(false)
   const [isRefreshingPrice, setIsRefreshingPrice] = useState(false)
   const [transactionType, setTransactionType] = useState<TransactionType>('investment')
   const [transactionAmount, setTransactionAmount] = useState('')
@@ -1071,14 +1073,7 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
               {
                 label: '查看推文',
                 icon: <MessageSquare className="w-4 h-4" />,
-                onClick: () => {
-                  // 从 twitter URL 提取用户名
-                  const match = project.twitter?.match(/(?:twitter\.com|x\.com)\/([^/?]+)/)
-                  const username = match ? match[1] : ''
-                  if (username) {
-                    window.open(`https://x.com/${username}`, '_blank')
-                  }
-                }
+                onClick: () => setShowTwitterViewer(true)
               }
             ]}
           >
@@ -1385,6 +1380,18 @@ export function ProjectCard({ project, onEdit, onArchive, selected, onSelect, se
         onImport={handleImportPriceData}
         tokenName={project.name}
       />
+
+      {/* Twitter 推文查看器 */}
+      {project.twitter && (
+        <TwitterViewer
+          isOpen={showTwitterViewer}
+          onClose={() => setShowTwitterViewer(false)}
+          username={(() => {
+            const match = project.twitter?.match(/(?:twitter\.com|x\.com)\/([^/?]+)/)
+            return match ? match[1] : ''
+          })()}
+        />
+      )}
 
     </div>
   )
